@@ -72,11 +72,7 @@ public class PlaylistCmd extends OwnerCommand
         protected void execute(CommandEvent event) 
         {
             String pname = event.getArgs().replaceAll("\\s+", "_");
-            if(pname == null || pname.isEmpty()) 
-            {
-                event.replyError("Please provide a name for the playlist!");
-            } 
-            else if(bot.getPlaylistLoader().getPlaylist(pname) == null)
+            if(bot.getPlaylistLoader().getPlaylist(pname)==null)
             {
                 try
                 {

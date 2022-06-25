@@ -18,6 +18,8 @@ package com.jagrosh.jmusicbot;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.jagrosh.jdautilities.examples.command.*;
+import com.jagrosh.jmusicbot.commands.Dice.RollCommand;
+import com.jagrosh.jmusicbot.commands.Media.*;
 import com.jagrosh.jmusicbot.commands.admin.*;
 import com.jagrosh.jmusicbot.commands.dj.*;
 import com.jagrosh.jmusicbot.commands.general.*;
@@ -43,43 +45,36 @@ import org.slf4j.LoggerFactory;
  */
 public class JMusicBot 
 {
-    public final static Logger LOG = LoggerFactory.getLogger(JMusicBot.class);
+    public final static String PLAY_EMOJI  = "\u25B6"; // ▶
+    public final static String PAUSE_EMOJI = "\u23F8"; // ⏸
+    public final static String STOP_EMOJI  = "\u23F9"; // ⏹
     public final static Permission[] RECOMMENDED_PERMS = {Permission.MESSAGE_READ, Permission.MESSAGE_WRITE, Permission.MESSAGE_HISTORY, Permission.MESSAGE_ADD_REACTION,
                                 Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_MANAGE, Permission.MESSAGE_EXT_EMOJI,
                                 Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_SPEAK, Permission.NICKNAME_CHANGE};
     public final static GatewayIntent[] INTENTS = {GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_VOICE_STATES};
-    
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args)
     {
-        if(args.length > 0)
-            switch(args[0].toLowerCase())
-            {
-                case "generate-config":
-                    BotConfig.writeDefaultConfig();
-                    return;
-                default:
-            }
-        startBot();
-    }
-    
-    private static void startBot()
-    {
-        // create prompt to handle startup
-        Prompt prompt = new Prompt("JMusicBot");
+        // startup log
+        Logger log = LoggerFactory.getLogger("Startup");
         
-        // startup checks
-        OtherUtil.checkVersion(prompt);
-        OtherUtil.checkJavaVersion(prompt);
+        // create prompt to handle startup
+        Prompt prompt = new Prompt("JMusicBot", "Switching to nogui mode. You can manually start in nogui mode by including the -Dnogui=true flag.");
+        
+        // get and check latest version
+        String version = OtherUtil.checkVersion(prompt);
+        
+        // check for valid java version
+        if(!System.getProperty("java.vm.name").contains("64"))
+            prompt.alert(Prompt.Level.WARNING, "Java Version", "It appears that you may not be using a supported Java version. Please use 64-bit java.");
         
         // load config
         BotConfig config = new BotConfig(prompt);
         config.load();
         if(!config.isValid())
             return;
-        LOG.info("Loaded config from " + config.getConfigLocation());
         
         // set up the listener
         EventWaiter waiter = new EventWaiter();
@@ -87,8 +82,8 @@ public class JMusicBot
         Bot bot = new Bot(waiter, config, settings);
         
         AboutCommand aboutCommand = new AboutCommand(Color.BLUE.brighter(),
-                                "a music bot that is [easy to host yourself!](https://github.com/jagrosh/MusicBot) (v" + OtherUtil.getCurrentVersion() + ")",
-                                new String[]{"High-quality music playback", "FairQueue™ Technology", "Easy to host yourself"},
+                                "a music bot that is [easy to host yourself!](https://github.com/jagrosh/MusicBot) heavily modified by Prometheus#1510",
+                                new String[]{"High-quality music playback", "Dice roller", "Easy to host yourself"},
                                 RECOMMENDED_PERMS);
         aboutCommand.setIsAuthor(false);
         aboutCommand.setReplacementCharacter("\uD83C\uDFB6"); // 🎶
@@ -102,9 +97,15 @@ public class JMusicBot
                 .setHelpWord(config.getHelp())
                 .setLinkedCacheSize(200)
                 .setGuildSettingsManager(settings)
-                .addCommands(aboutCommand,
+                .addCommands(aboutCommand,           
+                		
                         new PingCommand(),
                         new SettingsCmd(bot),
+                        new ListTierRolesCmd(bot),
+                        
+                        new TestCommand(bot),
+                        
+                        new RollCommand(bot),
                         
                         new LyricsCmd(bot),
                         new NowplayingCmd(bot),
@@ -119,6 +120,7 @@ public class JMusicBot
 
                         new ForceRemoveCmd(bot),
                         new ForceskipCmd(bot),
+                        new ForceskipfadeCmd(bot),
                         new MoveTrackCmd(bot),
                         new PauseCmd(bot),
                         new PlaynextCmd(bot),
@@ -132,6 +134,7 @@ public class JMusicBot
                         new SkipratioCmd(bot),
                         new SettcCmd(bot),
                         new SetvcCmd(bot),
+                        new SetTierCmd(bot),
                         
                         new AutoplaylistCmd(bot),
                         new DebugCmd(bot),
@@ -167,11 +170,13 @@ public class JMusicBot
             } 
             catch(Exception e) 
             {
-                LOG.error("Could not start GUI. If you are "
+                log.error("Could not start GUI. If you are "
                         + "running on a server or in a location where you cannot display a "
                         + "window, please run in nogui mode using the -Dnogui=true flag.");
             }
         }
+        
+        log.info("Loaded config from " + config.getConfigLocation());
         
         // attempt to log in and start
         try
