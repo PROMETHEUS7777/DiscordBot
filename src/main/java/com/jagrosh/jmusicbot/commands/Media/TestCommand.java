@@ -41,6 +41,7 @@ public class TestCommand extends MediaCommand
     {
     	
         event.reply("https://i.imgflip.com/6a8fc2.gif");
+        event.reply("test \n test");
         
     }
 }

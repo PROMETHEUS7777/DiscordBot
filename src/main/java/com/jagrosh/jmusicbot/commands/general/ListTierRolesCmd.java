@@ -15,17 +15,12 @@
  */
 package com.jagrosh.jmusicbot.commands.general;
 
+import org.json.JSONArray;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jmusicbot.Bot;
-import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.jagrosh.jmusicbot.settings.Settings;
-import com.jagrosh.jmusicbot.utils.FormatUtil;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 
 /**
  *
@@ -45,7 +40,21 @@ public class ListTierRolesCmd extends Command
     @Override
     protected void execute(CommandEvent event) 
     {
-       
+    	Settings s = event.getClient().getSettingsFor(event.getGuild());
+    	JSONArray tierIds = s.getTierIds();
+    	String msg = "Tier Roles for " + event.getGuild().getName();
+    	
+    	if(tierIds.isEmpty())
+    	{
+    		event.replySuccess("No tier roles set for this server, use `" + event.getClient().getPrefix() + "settier` to set tier roles");
+    		return;
+    	}
+    	for(int i = 0; i < tierIds.length() ; i++) 
+    	{
+    		msg = msg + "\n Tier" + i + ": <@&" + tierIds.getLong(i) + ">";
+    	}
+    	event.replySuccess(msg);
+    	
     }
     
 }

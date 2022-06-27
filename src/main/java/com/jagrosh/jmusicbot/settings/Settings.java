@@ -18,6 +18,9 @@ package com.jagrosh.jmusicbot.settings;
 import com.jagrosh.jdautilities.command.GuildSettingsProvider;
 import java.util.Collection;
 import java.util.Collections;
+
+import org.json.JSONArray;
+
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -33,13 +36,15 @@ public class Settings implements GuildSettingsProvider
     protected long textId;
     protected long voiceId;
     protected long roleId;
+    protected boolean trackActivity;
+    protected JSONArray tierIds;
     private int volume;
     private String defaultPlaylist;
     private RepeatMode repeatMode;
     private String prefix;
     private double skipRatio;
 
-    public Settings(SettingsManager manager, String textId, String voiceId, String roleId, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
+    public Settings(SettingsManager manager, String textId, String voiceId, String roleId, boolean trackActivity, JSONArray tierIds, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
     {
         this.manager = manager;
         try
@@ -66,6 +71,8 @@ public class Settings implements GuildSettingsProvider
         {
             this.roleId = 0;
         }
+        this.tierIds = tierIds;
+        this.trackActivity = trackActivity;
         this.volume = volume;
         this.defaultPlaylist = defaultPlaylist;
         this.repeatMode = repeatMode;
@@ -73,12 +80,14 @@ public class Settings implements GuildSettingsProvider
         this.skipRatio = skipRatio;
     }
     
-    public Settings(SettingsManager manager, long textId, long voiceId, long roleId, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
+    public Settings(SettingsManager manager, long textId, long voiceId, long roleId, boolean trackActivity, JSONArray tierIds, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
     {
         this.manager = manager;
         this.textId = textId;
         this.voiceId = voiceId;
         this.roleId = roleId;
+        this.trackActivity = trackActivity;
+        this.tierIds = tierIds;
         this.volume = volume;
         this.defaultPlaylist = defaultPlaylist;
         this.repeatMode = repeatMode;
@@ -100,6 +109,16 @@ public class Settings implements GuildSettingsProvider
     public Role getRole(Guild guild)
     {
         return guild == null ? null : guild.getRoleById(roleId);
+    }
+    
+    public boolean getTracking()
+    {
+    	return trackActivity;
+    }
+    
+    public JSONArray getTierIds()
+    {
+    	return tierIds;
     }
     
     public int getVolume()
@@ -150,6 +169,18 @@ public class Settings implements GuildSettingsProvider
     {
         this.roleId = role == null ? 0 : role.getIdLong();
         this.manager.writeSettings();
+    }
+    
+    public void setTrackActivity(boolean temp)
+    {
+        this.trackActivity = temp;
+        this.manager.writeSettings();
+    }
+    
+    public void setTierIds(JSONArray tierIds)
+    {
+    	this.tierIds = tierIds;
+    	this.manager.writeSettings();
     }
     
     public void setVolume(int volume)

@@ -134,6 +134,7 @@ public class JMusicBot
                         new SkipratioCmd(bot),
                         new SettcCmd(bot),
                         new SetvcCmd(bot),
+                        new TrackActivityCmd(bot),
                         new SetTierCmd(bot),
                         
                         new AutoplaylistCmd(bot),
