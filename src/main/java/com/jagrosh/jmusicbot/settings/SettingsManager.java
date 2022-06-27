@@ -54,7 +54,9 @@ public class SettingsManager implements GuildSettingsManager
                         o.has("voice_channel_id")? o.getString("voice_channel_id")           : null,
                         o.has("dj_role_id")      ? o.getString("dj_role_id")                 : null,
                         o.has("track_activity")  ? o.getBoolean("track_activity")            : false,
-                        o.has("tier_ids")         ? o.getJSONArray("tier_ids")                 : new JSONArray(),
+                        o.has("tier_ids")        ? o.getJSONArray("tier_ids")                : new JSONArray(),
+                        o.has("activity")        ? o.getJSONObject("activity")               : new JSONObject(),		
+                        o.has("old_activity")    ? o.getJSONObject("old_activity")           : new JSONObject(),		
                         o.has("volume")          ? o.getInt("volume")                        : 100,
                         o.has("default_playlist")? o.getString("default_playlist")           : null,
                         o.has("repeat_mode")     ? o.getEnum(RepeatMode.class, "repeat_mode"): RepeatMode.OFF,
@@ -85,7 +87,7 @@ public class SettingsManager implements GuildSettingsManager
     
     private Settings createDefaultSettings()
     {
-        return new Settings(this, 0, 0, 0, false, new JSONArray(), 100, null, RepeatMode.OFF, null, SKIP_RATIO);
+        return new Settings(this, 0, 0, 0, false, new JSONArray(), new JSONObject(), new JSONObject(), 100, null, RepeatMode.OFF, null, SKIP_RATIO);
     }
     
     protected void writeSettings()
@@ -104,6 +106,10 @@ public class SettingsManager implements GuildSettingsManager
             	o.put("track_activity", s.getTracking());
             if(!s.tierIds.isEmpty())
             	o.put("tier_ids", s.getTierIds());
+            if(!s.activity.isEmpty())
+            	o.put("activity", s.getActivity());
+            if(!s.oldActivity.isEmpty())
+            	o.put("old_activity", s.getOldActivity());
             if(s.getVolume()!=100)
                 o.put("volume",s.getVolume());
             if(s.getDefaultPlaylist() != null)

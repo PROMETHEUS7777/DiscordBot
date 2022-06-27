@@ -73,11 +73,23 @@ public class SetTierCmd extends AdminCommand
         	 return;
          }
          
+         Settings s = event.getClient().getSettingsFor(event.getGuild());
+         JSONArray tierIds = s.getTierIds();
+         
+         //check if clearing a role
+         if(event.getArgs().contains("NONE"))
+         {
+        	 tierIds.remove(tier);
+        	 s.setTierIds(tierIds);
+        	 event.replySuccess("Tier role *" + tier + "* cleared, any higher roles have been lowered by 1");
+        	 return;
+         }
+         
          //get roles mentioned
          roleId = event.getMessage().getMentionedRoles();
          if(roleId.isEmpty())
          {
-        	 event.replyError("Must include a role, do this by pinging the role you want to set as tier *" + tier + "*");
+        	 event.replyError("Must include a role or NONE, do this by pinging the role you want to set as tier *" + tier + "*");
         	 return;
          }
          if(roleId.size() > 1)
@@ -86,8 +98,7 @@ public class SetTierCmd extends AdminCommand
         	 return;
          }
          
-         Settings s = event.getClient().getSettingsFor(event.getGuild());
-         JSONArray tierIds = s.getTierIds();
+         
          
          if(tierIds.length() < tier)
          {

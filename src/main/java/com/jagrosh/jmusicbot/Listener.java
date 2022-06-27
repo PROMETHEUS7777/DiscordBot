@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.jagrosh.jmusicbot.settings.Settings;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -25,6 +26,7 @@ import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -91,6 +93,29 @@ public class Listener extends ListenerAdapter
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) 
     {
         bot.getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
+    }
+    
+    @Override
+    public void onMessageReceived(MessageReceivedEvent event) 
+    {
+        //check if it's a bot
+    	if (event.getAuthor().isBot()) 
+    	{
+    		return;
+    	}
+    	//check if it's a direct message
+    	if (!event.isFromGuild())
+    	{
+    		return;
+    	}
+    	//check if the server has tracking on
+    	Settings s = bot.getSettingsManager().getSettings(event.getGuild());
+    	if (!s.getTracking())
+    	{
+    		return;
+    	}
+    	//find what user sent it, and put it in activity
+    	
     }
 
     @Override
