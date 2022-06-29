@@ -26,13 +26,13 @@ import net.dv8tion.jda.api.entities.Role;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
-public class ListTierRolesCmd extends Command 
+public class ListTiersCmd extends Command 
 {
     
-    public ListTierRolesCmd(Bot bot)
+    public ListTiersCmd(Bot bot)
     {
-        this.name = "listtierroles";
-        this.help = "shows activity tier roles for current guild";
+        this.name = "listtiers";
+        this.help = "shows activity tiers for current guild";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
     }
@@ -41,8 +41,8 @@ public class ListTierRolesCmd extends Command
     protected void execute(CommandEvent event) 
     {
     	Settings s = event.getClient().getSettingsFor(event.getGuild());
-    	JSONArray tierIds = s.getTierIds();
-    	String msg = "Tier Roles for " + event.getGuild().getName();
+    	JSONArray tierIds = s.getTiers();
+    	String msg = "Tiers for " + event.getGuild().getName();
     	
     	if(tierIds.isEmpty())
     	{
@@ -51,7 +51,7 @@ public class ListTierRolesCmd extends Command
     	}
     	for(int i = 0; i < tierIds.length() ; i++) 
     	{
-    		msg = msg + "\n Tier" + i + ": <@&" + tierIds.getLong(i) + ">";
+    		msg = msg + "\n Tier" + i + ":\n\tValue: " + tierIds.getJSONObject(i).getLong("value") +"\n\tRole: <@&" + tierIds.getJSONObject(i).getLong("id") + ">";
     	}
     	event.replySuccess(msg);
     	

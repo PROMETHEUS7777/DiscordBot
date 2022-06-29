@@ -38,16 +38,17 @@ public class Settings implements GuildSettingsProvider
     protected long voiceId;
     protected long roleId;
     protected boolean trackActivity;
-    protected JSONArray tierIds;
-    protected JSONObject activity;
-    protected JSONObject oldActivity;
+    protected int voiceRatio;
+    protected JSONArray tiers;
+    public JSONObject activity;
+    public JSONObject oldActivity;
     private int volume;
     private String defaultPlaylist;
     private RepeatMode repeatMode;
     private String prefix;
     private double skipRatio;
 
-    public Settings(SettingsManager manager, String textId, String voiceId, String roleId, boolean trackActivity, JSONArray tierIds, JSONObject activity, JSONObject oldActivity, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
+    public Settings(SettingsManager manager, String textId, String voiceId, String roleId, boolean trackActivity, int voiceRatio, JSONArray tiers, JSONObject activity, JSONObject oldActivity, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
     {
         this.manager = manager;
         try
@@ -75,7 +76,8 @@ public class Settings implements GuildSettingsProvider
             this.roleId = 0;
         }
         this.trackActivity = trackActivity;
-        this.tierIds = tierIds;
+        this.voiceRatio = voiceRatio;
+        this.tiers = tiers;
         this.activity = activity;
         this.oldActivity = oldActivity;
         this.volume = volume;
@@ -85,14 +87,15 @@ public class Settings implements GuildSettingsProvider
         this.skipRatio = skipRatio;
     }
     
-    public Settings(SettingsManager manager, long textId, long voiceId, long roleId, boolean trackActivity, JSONArray tierIds, JSONObject activity, JSONObject oldActivity, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
+    public Settings(SettingsManager manager, long textId, long voiceId, long roleId, boolean trackActivity, int voiceRatio, JSONArray tiers, JSONObject activity, JSONObject oldActivity, int volume, String defaultPlaylist, RepeatMode repeatMode, String prefix, double skipRatio)
     {
         this.manager = manager;
         this.textId = textId;
         this.voiceId = voiceId;
         this.roleId = roleId;
         this.trackActivity = trackActivity;
-        this.tierIds = tierIds;
+        this.voiceRatio = voiceRatio;
+        this.tiers = tiers;
         this.activity = activity;
         this.oldActivity = oldActivity;
         this.volume = volume;
@@ -123,9 +126,14 @@ public class Settings implements GuildSettingsProvider
     	return trackActivity;
     }
     
-    public JSONArray getTierIds()
+    public int getVoiceRatio()
     {
-    	return tierIds;
+    	return voiceRatio;
+    }
+    
+    public JSONArray getTiers()
+    {
+    	return tiers;
     }
     
     public JSONObject getActivity()
@@ -194,9 +202,15 @@ public class Settings implements GuildSettingsProvider
         this.manager.writeSettings();
     }
     
-    public void setTierIds(JSONArray tierIds)
+    public void setVoiceRatio(int ratio)
     {
-    	this.tierIds = tierIds;
+    	this.voiceRatio = ratio;
+    	this.manager.writeSettings();
+    }
+    
+    public void setTiers(JSONArray tiers)
+    {
+    	this.tiers = tiers;
     	this.manager.writeSettings();
     }
     

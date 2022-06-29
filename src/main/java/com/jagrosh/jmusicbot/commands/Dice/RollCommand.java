@@ -85,7 +85,15 @@ public class RollCommand extends DiceCommand
             switch (toRoll.charAt(it))
             {
             case 'd':
+            	try
+            	{
                 tempRolls.diceNum = Integer.parseInt(toRoll.substring(lit, it));
+            	}
+            	catch(NumberFormatException e)
+            	{
+            		event.replyError("You dont need to roll that many of them");
+            		return;
+            	}
                 lit = it;
                 break;
             case '+':
@@ -93,11 +101,27 @@ public class RollCommand extends DiceCommand
                 switch (toRoll.charAt(lit))
                 {
                 case 'd':
-                    tempRolls.diceValue = Integer.parseInt(toRoll.substring(lit + 1, it));
+                	try
+                	{
+                		tempRolls.diceValue = Integer.parseInt(toRoll.substring(lit + 1, it));
+                	}
+                	catch(NumberFormatException e)
+                	{
+                		event.replyError("Your dice aren't that big");
+                		return;
+                	}
                     break;
                 case '+':
                 case'-':
-                    tempRolls.bonus = Integer.parseInt(toRoll.substring(lit, it));
+                	try
+                	{
+                		tempRolls.bonus = Integer.parseInt(toRoll.substring(lit, it));
+                	}
+                	catch(NumberFormatException e)
+                	{
+                		event.replyError("Your bonus isn't that long");
+                		return;
+                	}
                     break;
                 }
                 rolls.add(tempRolls);
@@ -113,10 +137,26 @@ public class RollCommand extends DiceCommand
                 {
                 case '+':
                 case'-':
-                    tempRolls.bonus = Integer.parseInt(toRoll.substring(lit, it));
+                	try
+                	{
+                		tempRolls.bonus = Integer.parseInt(toRoll.substring(lit, it));
+                	}
+                	catch(NumberFormatException e)
+                	{
+                		event.replyError("Your bonus isn't that long");
+                		return;
+                	}
                     break;
                 case 'd':
-                    tempRolls.diceValue = Integer.parseInt(toRoll.substring(lit + 1, it));
+                	try
+                	{
+                		tempRolls.diceValue = Integer.parseInt(toRoll.substring(lit + 1, it));
+                	}
+                	catch(NumberFormatException e)
+                	{
+                		event.replyError("Your bonus isn't that long");
+                		return;
+                	}
                     break;
                 }
                 rolls.add(tempRolls);

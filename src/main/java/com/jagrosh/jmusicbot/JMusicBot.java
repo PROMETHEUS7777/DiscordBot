@@ -27,15 +27,29 @@ import com.jagrosh.jmusicbot.commands.music.*;
 import com.jagrosh.jmusicbot.commands.owner.*;
 import com.jagrosh.jmusicbot.entities.Prompt;
 import com.jagrosh.jmusicbot.gui.GUI;
+import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.settings.SettingsManager;
 import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.jagrosh.jmusicbot.roles.UpdateActivityRoles;
 import java.awt.Color;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.*;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +115,7 @@ public class JMusicBot
                 		
                         new PingCommand(),
                         new SettingsCmd(bot),
-                        new ListTierRolesCmd(bot),
+                        new ListTiersCmd(bot),
                         
                         new TestCommand(bot),
                         
@@ -206,5 +220,18 @@ public class JMusicBot
                     + "invalid: " + ex + "\nConfig Location: " + config.getConfigLocation());
             System.exit(1);
         }
+        
+        ScheduledExecutorService reset = Executors.newScheduledThreadPool(1);
+        reset.scheduleAtFixedRate(() -> {
+        	HashMap<Long,Settings> sMap = settings.getAllSettings();
+        	for (Settings s: sMap.values()) {
+        		s.oldActivity = s.activity;
+        		s.activity = new JSONObject();
+        	}
+        	settings.setAllSettings(sMap);
+        	UpdateActivityRoles.UpdateAllActRoles();        	
+        }
+        ,((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600, 604800, TimeUnit.SECONDS);
+        
     }
 }

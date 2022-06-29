@@ -16,7 +16,11 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.sun.tools.javac.util.Log;
+import com.jagrosh.jmusicbot.roles.UpdateActivityRoles;
 import com.jagrosh.jmusicbot.settings.Settings;
+
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -25,11 +29,14 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,9 +122,127 @@ public class Listener extends ListenerAdapter
     		return;
     	}
     	//find what user sent it, and put it in activity
+    	JSONObject activity = s.getActivity();
+    	
+    	//if user is already in activity, then increase their message 
+    	if (activity.has(event.getAuthor().getId()))
+    	{
+    		JSONObject uAct = activity.getJSONObject(event.getAuthor().getId());
+    		uAct.put("msgs", uAct.getInt("msgs") + 1);
+    		activity.put(event.getAuthor().getId(), uAct);
+    		s.setActivity(activity);
+    		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+    		uRoles.UpdatemActRoles(event.getMember());
+    		return;
+    	}
+    	//if user isnt already in activity, add them
+    	else
+    	{
+    		JSONObject uAct = new JSONObject();
+    		uAct.put("msgs", 1);
+    		uAct.put("voice", 0);
+    		uAct.put("last", -1);
+    		activity.put(event.getAuthor().getId(), uAct);
+    		s.setActivity(activity);
+    		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+    		uRoles.UpdatemActRoles(event.getMember());
+    		return;
+    	}
+    }
+    @Override
+    public void onGuildVoiceJoin(GuildVoiceJoinEvent event)
+    {
+    	//check if it's a bot
+    	if (event.getMember().getUser().isBot()) 
+    	{
+    		return;
+    	}
+    	Settings s = bot.getSettingsManager().getSettings(event.getGuild());
+    	//check if the server has tracking on
+    	if (!s.getTracking())
+    	{
+    		return;
+    	}
+    	//find what user joined, and put it in activity
+    	JSONObject activity = s.getActivity();
+    	
+    	//if user is already in activity, then increase their message 
+    	if (activity.has(event.getMember().getId()))
+    	{
+    		JSONObject uAct = activity.getJSONObject(event.getMember().getId());
+    		uAct.put("last", Instant.now().getEpochSecond());
+    		activity.put(event.getMember().getId(), uAct);
+    		s.setActivity(activity);
+    		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+    		uRoles.UpdatemActRoles(event.getMember());
+    		return;
+    	}
+    	//if user isnt already in activity, add them
+    	else
+    	{
+    		JSONObject uAct = new JSONObject();
+    		uAct.put("msgs", 0);
+    		uAct.put("voice", 0);
+    		uAct.put("last", Instant.now().getEpochSecond());
+    		activity.put(event.getMember().getId(), uAct);
+    		s.setActivity(activity);
+    		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+    		uRoles.UpdatemActRoles(event.getMember());
+    		return;
+    	}
     	
     }
-
+    
+    @Override
+    public void onGuildVoiceLeave(GuildVoiceLeaveEvent event)
+    {
+    	//check if it's a bot
+    	if (event.getMember().getUser().isBot()) 
+    	{
+    		return;
+    	}
+    	Settings s = bot.getSettingsManager().getSettings(event.getGuild());
+    	//check if the server has tracking on
+    	if (!s.getTracking())
+    	{
+    		return;
+    	}
+    	//find what user joined, and put it in activity
+    	JSONObject activity = s.getActivity();
+    	
+    	//if user is already in activity, then increase their message 
+    	if (activity.has(event.getMember().getId()))
+    	{
+    		// if last isnt -1, add the number of minutes user was in vc to voice
+    		JSONObject uAct = activity.getJSONObject(event.getMember().getId());
+    		if(uAct.getLong("last") != -1) 
+    		{
+    			uAct.put("voice", uAct.getInt("voice") + ((uAct.getLong("last") - Instant.now().getEpochSecond())/60));
+    			uAct.put("last", -1);
+    			
+    			activity.put(event.getMember().getId(), uAct);
+        		s.setActivity(activity);
+        		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+        		uRoles.UpdatemActRoles(event.getMember());
+    		}
+    		return;
+    	}
+    	//if user isnt already in activity, add them
+    	else
+    	{
+    		JSONObject uAct = new JSONObject();
+    		uAct.put("msgs", 0);
+    		uAct.put("voice", 0);
+    		uAct.put("last", -1);
+    		activity.put(event.getMember().getId(), uAct);
+    		s.setActivity(activity);
+    		UpdateActivityRoles uRoles = new UpdateActivityRoles();
+    		uRoles.UpdatemActRoles(event.getMember());
+    		return;
+    	}
+    	
+    }
+    
     @Override
     public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event)
     {

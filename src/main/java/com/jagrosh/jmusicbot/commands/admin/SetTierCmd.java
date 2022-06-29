@@ -18,6 +18,7 @@ package com.jagrosh.jmusicbot.commands.admin;
 import java.util.List;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jmusicbot.Bot;
@@ -36,7 +37,7 @@ public class SetTierCmd extends AdminCommand
     {
         this.name = "settier";
         this.help = "sets an activity tier role for this server";
-        this.arguments = "<0-10> <rolename|NONE>";
+        this.arguments = "<tier number> <tier value> <rolename|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
     }
@@ -51,16 +52,26 @@ public class SetTierCmd extends AdminCommand
          }
          
     	 int tier;
+    	 JSONObject tierData = new JSONObject();
+    	 int value;
     	 List<Role> roleId;
     	 int spaceloc;
+    	 int space2loc;
          
          
          
          //get tier
          spaceloc = event.getArgs().indexOf(" ");
+    	 space2loc = event.getArgs().indexOf(" ",spaceloc + 1);
+         
          if (spaceloc == -1)
          {
         	 event.replyError("Please include a `@role` or NONE");
+        	 return;
+         }
+         if (space2loc == -1)
+         {
+        	 event.replyError("Please include a value for the tier");
         	 return;
          }
          try 
@@ -72,19 +83,26 @@ public class SetTierCmd extends AdminCommand
         	 event.replyError("Invalid tier, please enter a valid number");
         	 return;
          }
-         
+         try 
+         {
+        	 value = Integer.parseInt(event.getArgs().substring(spaceloc + 1, space2loc));
+         }
+         catch(NumberFormatException e)
+         {
+        	 event.replyError("Invalid tier value, please enter a valid tier number");
+        	 return;
+         }
          Settings s = event.getClient().getSettingsFor(event.getGuild());
-         JSONArray tierIds = s.getTierIds();
+         JSONArray tiers = s.getTiers();
          
          //check if clearing a role
          if(event.getArgs().contains("NONE"))
          {
-        	 tierIds.remove(tier);
-        	 s.setTierIds(tierIds);
-        	 event.replySuccess("Tier role *" + tier + "* cleared, any higher roles have been lowered by 1");
+        	 tiers.remove(tier);
+        	 s.setTiers(tiers);
+        	 event.replySuccess("Tier *" + tier + "* cleared, any higher roles have been lowered by 1");
         	 return;
-         }
-         
+         }         
          //get roles mentioned
          roleId = event.getMessage().getMentionedRoles();
          if(roleId.isEmpty())
@@ -96,19 +114,18 @@ public class SetTierCmd extends AdminCommand
          {
         	 event.replyError("Please only include 1 role");
         	 return;
-         }
-         
-         
-         
-         if(tierIds.length() < tier)
+         }                  
+         if(tiers.length() < tier)
          {
         	 event.replyError("Must fill all lower tiers starting at 0 before filling tier *" + tier + "*");
         	 return;
          }
-         
-         tierIds.put(roleId.get(0).getIdLong());
-         s.setTierIds(tierIds);
-         event.replySuccess("Set tier role *" + tier + "* to <@&" + tierIds.getLong(tier) + ">");
+         tierData.put("id", roleId.get(0).getIdLong());
+         tierData.put("value", value);
+         tiers.put(tier, tierData);
+         s.setTiers(tiers);
+         event.replySuccess("Set tier *" + tier + "* role to <@&" + tiers.getJSONObject(tier).getLong("id") + ">"
+         		+ "\n and tier *" + tier + "* value to *" +tiers.getJSONObject(tier).getInt("value") + "*");
          
          
          

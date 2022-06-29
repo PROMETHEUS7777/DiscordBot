@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class SettingsManager implements GuildSettingsManager
 {
     private final static double SKIP_RATIO = .55;
-    private final HashMap<Long,Settings> settings;
+    private HashMap<Long,Settings> settings;
 
     public SettingsManager()
     {
@@ -54,7 +54,8 @@ public class SettingsManager implements GuildSettingsManager
                         o.has("voice_channel_id")? o.getString("voice_channel_id")           : null,
                         o.has("dj_role_id")      ? o.getString("dj_role_id")                 : null,
                         o.has("track_activity")  ? o.getBoolean("track_activity")            : false,
-                        o.has("tier_ids")        ? o.getJSONArray("tier_ids")                : new JSONArray(),
+                   		o.has("voice_ratio")     ? o.getInt("voice_ratio")                   : 3,
+                        o.has("tiers")           ? o.getJSONArray("tiers")                   : new JSONArray(),
                         o.has("activity")        ? o.getJSONObject("activity")               : new JSONObject(),		
                         o.has("old_activity")    ? o.getJSONObject("old_activity")           : new JSONObject(),		
                         o.has("volume")          ? o.getInt("volume")                        : 100,
@@ -85,9 +86,21 @@ public class SettingsManager implements GuildSettingsManager
         return settings.computeIfAbsent(guildId, id -> createDefaultSettings());
     }
     
+    public HashMap<Long,Settings> getAllSettings ()
+    {
+    	return settings;
+    }
+    
+    public void setAllSettings (HashMap<Long,Settings> toSet)
+    {
+    	settings = toSet;
+    	writeSettings();
+    	return;
+    }
+    
     private Settings createDefaultSettings()
     {
-        return new Settings(this, 0, 0, 0, false, new JSONArray(), new JSONObject(), new JSONObject(), 100, null, RepeatMode.OFF, null, SKIP_RATIO);
+        return new Settings(this, 0, 0, 0, false, 3, new JSONArray(), new JSONObject(), new JSONObject(), 100, null, RepeatMode.OFF, null, SKIP_RATIO);
     }
     
     protected void writeSettings()
@@ -104,8 +117,10 @@ public class SettingsManager implements GuildSettingsManager
                 o.put("dj_role_id", Long.toString(s.roleId));
             if(s.getTracking() != false)
             	o.put("track_activity", s.getTracking());
-            if(!s.tierIds.isEmpty())
-            	o.put("tier_ids", s.getTierIds());
+            if(s.getVoiceRatio() != 3)
+            	o.put("voice_ratio", s.getVoiceRatio());
+            if(!s.tiers.isEmpty())
+            	o.put("tiers", s.getTiers());
             if(!s.activity.isEmpty())
             	o.put("activity", s.getActivity());
             if(!s.oldActivity.isEmpty())
