@@ -1,34 +1,38 @@
 package com.jagrosh.jmusicbot.roles;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.settings.SettingsManager;
+
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 
 public class UpdateActivityRoles {
 
-	private final static SettingsManager settings = new SettingsManager();
+	private final SettingsManager settings = new SettingsManager();
 	
-	public static void UpdatemActRoles(Member member)
+	public void UpdatemActRoles(Member member)
 	{
 		Settings s  = settings.getSettings(member.getGuild().getIdLong());
 		
 		//find what tier member should have
 		int sTier = 0;
-		int aNum = s.getActivity().getJSONObject(member.getId()).getInt("msgs") + (s.getActivity().getJSONObject(member.getId()).getInt("voice")/s.getVoiceRatio());		
+		int aNum = s.getActivity().getJSONObject(member.getId()).getInt("msgs") + s.getActivity().getJSONObject(member.getId()).getInt("voice")/s.getVoiceRatio();		
 		JSONArray tiers = s.getTiers();
 		for(int i = 0; i < tiers.length() ; i++)
 		{
-			if (tiers.getJSONObject(i).getInt("value") >= aNum)
+			if (aNum >= tiers.getJSONObject(i).getInt("value"))
 			{
 				sTier = i;
-				break;
 			}
 		}
 		
@@ -59,8 +63,50 @@ public class UpdateActivityRoles {
 		
 	}
 	
-	public static void UpdateAllActRoles() 
+	public void UpdateAllActRoles(Bot bot) 
 	{
-		
+		SettingsManager settings = new SettingsManager();
+		HashMap<Long,Settings> sMap = settings.getAllSettings();
+		for (long gid: sMap.keySet()) {
+			
+			if (settings.getSettings(gid).getTracking()) {
+			JSONArray tiers = settings.getSettings(gid).getTiers();
+			List<Role> roles = bot.getJDA().getGuildById(gid).getRoles();
+			List<Long> roleIds = new ArrayList<Long>();
+			for (Role r : roles)
+			{
+				roleIds.add(r.getIdLong());
+			}
+    		for (String member : settings.getSettings(gid).getOldActivity().keySet()) {
+    			//find what tier member should have
+    			int sTier = 0;
+    			int aNum = settings.getSettings(gid).getOldActivity().getJSONObject(member).getInt("msgs") + settings.getSettings(gid).getOldActivity().getJSONObject(member).getInt("voice")/settings.getSettings(gid).getVoiceRatio();
+    			for(int i = 0; i < tiers.length() ; i++)
+    			{
+    				if (aNum >= tiers.getJSONObject(i).getInt("value"))
+    				{
+    					sTier = i;
+    				}
+    			}
+    			//loop through each tier
+    			for (int i = 0 ; i < tiers.length() ; i++)
+    			{
+    				//if user has a role in this tier
+    				if (roleIds.contains(tiers.getJSONObject(i).getLong("id")))
+    				{
+    					if(i == sTier)
+    					{
+    						bot.getJDA().getGuildById(gid).addRoleToMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+    					}
+    					else
+    					{
+    						bot.getJDA().getGuildById(gid).removeRoleFromMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+    					}
+    				}
+    			}
+    			
+    		}
+    	}
+		}
 	}
 }

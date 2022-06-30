@@ -34,11 +34,7 @@ import com.jagrosh.jmusicbot.roles.UpdateActivityRoles;
 import java.awt.Color;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -229,9 +225,11 @@ public class JMusicBot
         		s.activity = new JSONObject();
         	}
         	settings.setAllSettings(sMap);
-        	UpdateActivityRoles.UpdateAllActRoles();        	
+        	UpdateActivityRoles uRoles = new UpdateActivityRoles();
+			uRoles.UpdateAllActRoles(bot);        	
         }
-        ,((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600, 604800, TimeUnit.SECONDS);
+        ,10, 604800, TimeUnit.SECONDS);
+        //((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600
         
     }
 }

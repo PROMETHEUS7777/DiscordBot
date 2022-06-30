@@ -16,7 +16,6 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
-import com.sun.tools.javac.util.Log;
 import com.jagrosh.jmusicbot.roles.UpdateActivityRoles;
 import com.jagrosh.jmusicbot.settings.Settings;
 
@@ -217,7 +216,7 @@ public class Listener extends ListenerAdapter
     		JSONObject uAct = activity.getJSONObject(event.getMember().getId());
     		if(uAct.getLong("last") != -1) 
     		{
-    			uAct.put("voice", uAct.getInt("voice") + ((uAct.getLong("last") - Instant.now().getEpochSecond())/60));
+    			uAct.put("voice", uAct.getInt("voice") + ((Instant.now().getEpochSecond() + uAct.getLong("last"))/60));
     			uAct.put("last", -1);
     			
     			activity.put(event.getMember().getId(), uAct);
