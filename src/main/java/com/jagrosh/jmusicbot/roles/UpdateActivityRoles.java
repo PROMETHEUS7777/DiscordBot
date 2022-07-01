@@ -37,12 +37,29 @@ public class UpdateActivityRoles {
 		}
 		
 		//find what roles the guild has
-		List<Role> roles = member.getGuild().getRoles();
+		List<Role> groles = member.getGuild().getRoles();
 		List<Long> roleIds = new ArrayList<Long>();
-		for (Role r : roles)
+		for (Role r : groles)
 		{
 			roleIds.add(r.getIdLong());
 		}
+		
+		//find what roles a user has
+		List<Role> mRoles = member.getRoles();
+		
+		
+		//if the user has a tier role higher then or equal to sTier, return
+		for (int i = 0 ; i < tiers.length() ; i++)
+		{
+			if(mRoles.contains(member.getGuild().getRoleById(tiers.getJSONObject(i).getLong("id"))) && i >= sTier)
+			{
+				return;
+			}
+			
+		}
+
+	
+
 		//loop through each tier
 		for (int i = 0 ; i < tiers.length() ; i++)
 		{

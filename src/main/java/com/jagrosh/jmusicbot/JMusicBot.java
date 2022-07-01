@@ -228,8 +228,7 @@ public class JMusicBot
         	UpdateActivityRoles uRoles = new UpdateActivityRoles();
 			uRoles.UpdateAllActRoles(bot);        	
         }
-        ,10, 604800, TimeUnit.SECONDS);
-        //((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600
+        ,((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600, 604800, TimeUnit.SECONDS);
         
     }
 }

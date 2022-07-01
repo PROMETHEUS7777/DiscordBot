@@ -216,7 +216,7 @@ public class Listener extends ListenerAdapter
     		JSONObject uAct = activity.getJSONObject(event.getMember().getId());
     		if(uAct.getLong("last") != -1) 
     		{
-    			uAct.put("voice", uAct.getInt("voice") + ((Instant.now().getEpochSecond() + uAct.getLong("last"))/60));
+    			uAct.put("voice", uAct.getInt("voice") + ((Instant.now().getEpochSecond() - uAct.getLong("last"))/60));
     			uAct.put("last", -1);
     			
     			activity.put(event.getMember().getId(), uAct);
