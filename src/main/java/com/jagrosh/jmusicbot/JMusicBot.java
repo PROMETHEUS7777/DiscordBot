@@ -217,7 +217,8 @@ public class JMusicBot
             System.exit(1);
         }
         
-        ScheduledExecutorService reset = Executors.newScheduledThreadPool(1);
+        final ScheduledExecutorService reset = Executors.newScheduledThreadPool(1);
+        long epoch = Instant.now().getEpochSecond();
         reset.scheduleAtFixedRate(() -> {
         	HashMap<Long,Settings> sMap = settings.getAllSettings();
         	for (Settings s: sMap.values()) {
@@ -226,9 +227,9 @@ public class JMusicBot
         	}
         	settings.setAllSettings(sMap);
         	UpdateActivityRoles uRoles = new UpdateActivityRoles();
-			uRoles.UpdateAllActRoles(bot);        	
+			uRoles.UpdateAllActRoles(bot);
         }
-        ,((Instant.now().getEpochSecond() - 237600) / 604800 + 1) * 604800 + 237600, 604800, TimeUnit.SECONDS);
+        ,(((epoch - 237600) / 604800 + 1) * 604800 + 237600) - epoch, 604800, TimeUnit.SECONDS);
         
     }
 }
