@@ -70,6 +70,7 @@ public class RollCommand extends DiceCommand
     		toRoll = "1d20";
     	}
     	
+    	//make toRoll all lowercase
     	toRoll = toRoll.toLowerCase();
     	
     	//make toRoll have something to signal the end of it
