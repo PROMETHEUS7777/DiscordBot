@@ -154,7 +154,8 @@ public class JMusicBot
                         new SetgameCmd(bot),
                         new SetnameCmd(bot),
                         new SetstatusCmd(bot),
-                        new ShutdownCmd(bot)
+                        new ShutdownCmd(bot),
+                        new RestartCmd(bot)
                 );
         if(config.useEval())
             cb.addCommand(new EvalCmd(bot));
