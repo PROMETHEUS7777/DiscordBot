@@ -115,6 +115,7 @@ public class JMusicBot
                         
                         new TestCommand(bot),
                         new CaptionCommand(bot),
+                        new ImplodeCommand(bot),
                         
                         new RollCommand(bot),
                         

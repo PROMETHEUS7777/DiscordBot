@@ -15,9 +15,20 @@
  */
 package com.jagrosh.jmusicbot.commands.Media;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.MediaCommand;
+
+import magick.ImageInfo;
+import magick.Magick;
+import magick.MagickException;
+import magick.MagickImage;
 
 /**
  *
@@ -54,8 +65,55 @@ public class CaptionCommand extends MediaCommand
         }
         
         //download image/gif to blob
-        
-        
-        
+        byte[] blob;
+        URL url = null;
+        //get url of attachment/embed
+    	try {
+    		if(!event.getMessage().getAttachments().isEmpty()) {
+    			url = new URL(event.getMessage().getAttachments().get(0).getUrl());
+    		}
+    		if(!event.getMessage().getEmbeds().isEmpty()) {
+    			url = new URL(event.getMessage().getEmbeds().get(0).getUrl());
+    		}
+    		if(url == null) {
+    			event.replyError("Unable to get url of image/gif, please send it as an attachment or embed");
+    			return;
+    		}			
+		} catch (MalformedURLException e) {
+			event.replyError("Something fucked up");
+			e.printStackTrace();
+			return;
+		}
+    	
+    	//download blob from url
+    	try(InputStream iStream = url.openStream()){
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int nRead;
+			byte[] data = new byte[16384];
+
+			while ((nRead = iStream.read(data, 0, data.length)) != -1) {
+			  baos.write(data, 0, nRead);
+			}
+			blob = baos.toByteArray();
+		} catch (IOException e) {
+			event.replyError("Unable to download image, please try again");
+			e.printStackTrace();
+			return;
+		}
+    	
+    	//make image
+    	MagickImage image;
+    	ImageInfo info;
+    	try {
+			image = new MagickImage(info = new ImageInfo(),blob);
+		} catch (MagickException e) {
+			event.replyError("what did you send me");
+			e.printStackTrace();
+			return;
+		}
+    	
+    	//add caption
+    	
     }
 }
