@@ -114,6 +114,7 @@ public class JMusicBot
                         new ListTiersCmd(bot),
                         
                         new TestCommand(bot),
+                        new CaptionCommand(bot),
                         
                         new RollCommand(bot),
                         
