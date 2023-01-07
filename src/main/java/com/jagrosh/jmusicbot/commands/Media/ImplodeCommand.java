@@ -16,7 +16,6 @@
 package com.jagrosh.jmusicbot.commands.Media;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -27,10 +26,9 @@ import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.MediaCommand;
 
 import magick.ImageInfo;
-import magick.Magick;
 import magick.MagickException;
 import magick.MagickImage;
-import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Message;
 
 /**
  *
@@ -79,7 +77,7 @@ public class ImplodeCommand extends MediaCommand
     			filename = tempurl.substring(tempurl.lastIndexOf('/'));
     		}
     		if(event.getMessage().getAttachments().isEmpty() && event.getMessage().getEmbeds().isEmpty()) {
-            	String tempurl = event.getArgs().substring(event.getArgs().indexOf("https://"), event.getArgs().indexOf(' '));
+            	String tempurl = event.getArgs().substring(event.getArgs().indexOf("https://"));
     			url = new URL(tempurl);
             	filename = tempurl.substring(tempurl.lastIndexOf('/'));
             }
@@ -95,7 +93,6 @@ public class ImplodeCommand extends MediaCommand
     	
     	//download blob from url
     	try(InputStream iStream = url.openStream()){
-			
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			int nRead;
 			byte[] data = new byte[16384];
@@ -104,9 +101,9 @@ public class ImplodeCommand extends MediaCommand
 			  baos.write(data, 0, nRead);
 			}
 			blob = baos.toByteArray();
+			
 		} catch (IOException e) {
 			event.replyError("Unable to download image, please try again");
-			e.printStackTrace();
 			return;
 		}
     	
@@ -115,36 +112,82 @@ public class ImplodeCommand extends MediaCommand
     	ImageInfo info;
     	try {
 			image = new MagickImage(info = new ImageInfo(),blob);
+			
 		} catch (MagickException e) {
-			event.replyError("what did you send me");
-			e.printStackTrace();
+			event.replyError("That's either not an image/gif or a bad link.\nIf it was from tenor, or a similar site, go and get the link to the actual gif.");
 			return;
 		}
     	
+    	//
+    	Message pmsg = event.getChannel().sendMessage("Processing...").complete();
+    	
+    	
+    	
+    	
+    	//convert image to array
+    	MagickImage[] iarray= null;
+    	try {
+			iarray = image.breakFrames();
+		} catch (MagickException e2) {
+			event.replyError("Failed to implode");
+			e2.printStackTrace();
+			return;
+		}
+    	
+    	
     	//implode the image
     	try {
-			image = image.implodeImage(0.5);
+    		for (int i = 0; i < iarray.length; i++) {
+                iarray[i] = iarray[i].implodeImage(0.7);
+              }
 		} catch (MagickException e) {
 			event.replyError("Failed to implode");
 			e.printStackTrace();
 			return;
 		}
     	
-    	//return to blob
+    	
+    	//return to image
+    	try {
+			image = new MagickImage(iarray);
+		} catch (MagickException e1) {
+			e1.printStackTrace();
+		}
+    	
+    	//if filename has no format, put a format on it
     	if(filename.indexOf('.') == -1)
 		{
     		try {
     			filename += '.' + image.getImageFormat();
     		} catch (MagickException e) {
-    			// TODO Auto-generated catch block
+    			event.replyError("Failed to implode");
     			e.printStackTrace();
+    			return;
     		}
 		}
     	
-    	blob = image.imageToBlob(info);
+		/*
+		 * //if it's to big, try making it smaller until it isn't to big try {
+		 * 
+		 * if(image.sizeBlob() >= 8000000) { image.strip();
+		 * event.getChannel().editMessageById(pmsg.getId(),"Result too large to upload")
+		 * .queue(); return; }
+		 * 
+		 * 
+		 * } catch (MagickException e) { e.printStackTrace(); }
+		 */
     	
+    	//return image to blob
+    	blob = image.imagesToBlob(info);
+    	
+    	//update processing message
+    	event.getChannel().editMessageById(pmsg.getId(),"Uploading result...").queue();
+    	
+    	//send finished image/gif
     	event.getChannel().sendFile(blob, "imploded_" + filename).queue();
     	
+    	//finalize processing message
+    	event.getChannel().editMessageById(pmsg.getId(),"We do a little imploding").queue();
     	
     }
 }

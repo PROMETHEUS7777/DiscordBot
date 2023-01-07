@@ -116,6 +116,12 @@ public class JMusicBot
                         new TestCommand(bot),
                         new CaptionCommand(bot),
                         new ImplodeCommand(bot),
+                        new ExplodeCommand(bot),
+                        new SwirlCommand(bot),
+                        new OilCommand(bot),
+                        new WaveCommand(bot),
+                        new SlowGifCommand(bot),
+                        new FastGifCommand(bot),
                         
                         new RollCommand(bot),
                         
