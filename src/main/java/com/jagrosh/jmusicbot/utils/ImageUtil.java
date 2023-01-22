@@ -83,7 +83,7 @@ public class ImageUtil {
 				//if it's to wide, add a newline
 				if ((int)(f.getStringBounds(retCaption.substring(lastNewLine, i), frc).getWidth()) > maxWidth){
 					retCaption.setCharAt(lastWhite, '\n');
-					lastNewLine = i;
+					lastNewLine = lastWhite;
 					retmet.lines++;
 				}
 				//update lastWhite
