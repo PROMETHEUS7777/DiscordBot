@@ -46,6 +46,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import org.json.JSONObject;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,6 +226,7 @@ public class JMusicBot
                     + "invalid: " + ex + "\nConfig Location: " + config.getConfigLocation());
             System.exit(1);
         }
+<<<<<<< HEAD
         
         final ScheduledExecutorService reset = Executors.newScheduledThreadPool(1);
         long epoch = Instant.now().getEpochSecond();
@@ -240,5 +242,13 @@ public class JMusicBot
         }
         ,(((epoch - 237600) / 604800 + 1) * 604800 + 237600) - epoch, 604800, TimeUnit.SECONDS);
         
+=======
+        catch(ErrorResponseException ex)
+        {
+            prompt.alert(Prompt.Level.ERROR, "JMusicBot", ex + "\nInvalid reponse returned when "
+                    + "attempting to connect, please make sure you're connected to the internet");
+            System.exit(1);
+        }
+>>>>>>> 2c76164f6d1e3fb270c5d987cfd37e94ff04a899
     }
 }
