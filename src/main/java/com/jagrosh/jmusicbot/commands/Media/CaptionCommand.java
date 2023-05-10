@@ -15,29 +15,20 @@
  */
 package com.jagrosh.jmusicbot.commands.Media;
 
-import java.awt.Rectangle;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.MediaCommand;
 import com.jagrosh.jmusicbot.utils.ImageUtil;
 import com.jagrosh.jmusicbot.utils.ImageUtil.CapMetrics;
-
-import magick.DrawInfo;
-import magick.ImageInfo;
-import magick.Magick;
-import magick.MagickException;
-import magick.MagickImage;
-import magick.PixelPacket;
-import magick.ProfileInfo;
-import magick.TypeMetric;
+import magick.*;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.utils.FileUpload;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  *
@@ -71,7 +62,7 @@ public class CaptionCommand extends MediaCommand
     	//check if there is actually an image/gif
         if(event.getMessage().getAttachments().isEmpty() && event.getMessage().getEmbeds().isEmpty())
         {
-        	if(event.getArgs().indexOf("https://") == -1) {
+        	if(!event.getArgs().contains("https://")) {
         		event.replyError("No attachment or embed");
             	return;
         	}
@@ -84,30 +75,29 @@ public class CaptionCommand extends MediaCommand
         }
         
         byte[] blob;
-        URL url = null;
-        String filename = null;
-        String caption = null;
+        URL url;
+        String filename;
+        String caption;
                
         //get url and filename of attachment/embed
     	try {
     		if(!event.getMessage().getAttachments().isEmpty()) {
     			url = new URL(event.getMessage().getAttachments().get(0).getUrl());
     			filename = event.getMessage().getAttachments().get(0).getFileName();
-    		}
-    		if(!event.getMessage().getEmbeds().isEmpty()) {
+    		} else if(!event.getMessage().getEmbeds().isEmpty()) {
     			String tempurl = event.getMessage().getEmbeds().get(0).getUrl();
+				if(tempurl == null) {
+					event.replyError("Unable to get url of image/gif, please send it as an attachment or embed");
+					return;
+				}
     			url = new URL(tempurl);
     			filename = tempurl.substring(tempurl.lastIndexOf('/'));
-    		}
-    		if(event.getMessage().getAttachments().isEmpty() && event.getMessage().getEmbeds().isEmpty()) {
+    		} else {
             	String tempurl = event.getArgs().substring(event.getArgs().lastIndexOf("https://"));
     			url = new URL(tempurl);
             	filename = tempurl.substring(tempurl.lastIndexOf('/'));
             }
-    		if(url == null) {
-    			event.replyError("Unable to get url of image/gif, please send it as an attachment or embed");
-    			return;
-    		}			
+
 		} catch (MalformedURLException e) {
 			event.replyError("Something fucked up");
 			e.printStackTrace();
@@ -181,7 +171,7 @@ public class CaptionCommand extends MediaCommand
     		dinfo = new DrawInfo(capinfo);
     		dinfo.setFont("caption-font.otf");
     		dinfo.setGravity(5);
-    		dinfo.setPointsize(width2/10);
+    		dinfo.setPointsize(width2/10.0);
     		dinfo.setUnderColor(PixelPacket.queryColorDatabase("white"));
     		icap.allocateImage(capinfo);
     		
@@ -271,7 +261,7 @@ public class CaptionCommand extends MediaCommand
     	event.getChannel().editMessageById(pmsg.getId(),"Uploading result...").queue();
     	
     	//send finished image/gif
-    	event.getChannel().sendFile(blob, "captioned_" + filename).queue();
+    	event.getChannel().sendFiles(FileUpload.fromData(blob, "captioned_" + filename)).queue();
     	
     	//finalize processing message
     	event.getChannel().editMessageById(pmsg.getId(), caption ).queue();

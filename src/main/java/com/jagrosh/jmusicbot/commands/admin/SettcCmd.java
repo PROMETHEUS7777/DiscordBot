@@ -22,7 +22,8 @@ import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 
 /**
  *
@@ -58,7 +59,7 @@ public class SettcCmd extends AdminCommand
             if(list.isEmpty())
                 event.reply(event.getClient().getWarning()+" No Text Channels found matching \""+event.getArgs()+"\"");
             else if (list.size()>1)
-                event.reply(event.getClient().getWarning()+FormatUtil.listOfTChannels(list, event.getArgs()));
+                event.reply(event.getClient().getWarning()+FormatUtil.listOfTChannels(list.stream().map(tc -> (MessageChannelUnion)tc).toList(), event.getArgs()));
             else
             {
                 s.setTextChannel(list.get(0));

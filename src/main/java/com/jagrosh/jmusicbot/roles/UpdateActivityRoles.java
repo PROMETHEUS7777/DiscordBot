@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import net.dv8tion.jda.api.entities.UserSnowflake;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -113,11 +114,11 @@ public class UpdateActivityRoles {
     				{
     					if(i == sTier)
     					{
-    						bot.getJDA().getGuildById(gid).addRoleToMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+    						bot.getJDA().getGuildById(gid).addRoleToMember(UserSnowflake.fromId(member), bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
     					}
     					else
     					{
-    						bot.getJDA().getGuildById(gid).removeRoleFromMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+    						bot.getJDA().getGuildById(gid).removeRoleFromMember(UserSnowflake.fromId(member), bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
     					}
     				}
     			}

@@ -17,8 +17,8 @@ package com.jagrosh.jmusicbot.utils;
 
 import java.util.List;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
 
 /**
  *
@@ -60,7 +60,7 @@ public class FormatUtil {
         return "\uD83D\uDD0A";     // 🔊
     }
     
-    public static String listOfTChannels(List<TextChannel> list, String query)
+    public static String listOfTChannels(List<MessageChannelUnion> list, String query)
     {
         String out = " Multiple text channels found matching \""+query+"\":";
         for(int i=0; i<6 && i<list.size(); i++)
@@ -70,7 +70,7 @@ public class FormatUtil {
         return out;
     }
     
-    public static String listOfVChannels(List<VoiceChannel> list, String query)
+    public static String listOfVChannels(List<AudioChannelUnion> list, String query)
     {
         String out = " Multiple voice channels found matching \""+query+"\":";
         for(int i=0; i<6 && i<list.size(); i++)

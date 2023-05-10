@@ -104,7 +104,7 @@ public class SetTierCmd extends AdminCommand
         	 return;
          }         
          //get roles mentioned
-         roleId = event.getMessage().getMentionedRoles();
+         roleId = event.getMessage().getMentions().getRoles();
          if(roleId.isEmpty())
          {
         	 event.replyError("Must include a role or NONE, do this by pinging the role you want to set as tier *" + tier + "*");

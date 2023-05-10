@@ -29,6 +29,7 @@ import magick.ImageInfo;
 import magick.MagickException;
 import magick.MagickImage;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.utils.FileUpload;
 
 /**
  *
@@ -184,7 +185,7 @@ public class ImplodeCommand extends MediaCommand
     	event.getChannel().editMessageById(pmsg.getId(),"Uploading result...").queue();
     	
     	//send finished image/gif
-    	event.getChannel().sendFile(blob, "imploded_" + filename).queue();
+    	event.getChannel().sendFiles(FileUpload.fromData(blob, "imploded_" + filename)).queue();
     	
     	//finalize processing message
     	event.getChannel().editMessageById(pmsg.getId(),"We do a little imploding").queue();

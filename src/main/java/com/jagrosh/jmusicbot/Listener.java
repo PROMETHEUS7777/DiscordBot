@@ -24,16 +24,18 @@ import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.VoiceChannel;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -67,7 +69,7 @@ public class Listener extends ListenerAdapter
             try
             {
                 String defpl = bot.getSettingsManager().getSettings(guild).getDefaultPlaylist();
-                VoiceChannel vc = bot.getSettingsManager().getSettings(guild).getVoiceChannel(guild);
+                AudioChannelUnion vc = (AudioChannelUnion) bot.getSettingsManager().getSettings(guild).getVoiceChannel(guild);
                 if(defpl!=null && vc!=null && bot.getPlayerManager().setUpHandler(guild).playFromDefault())
                 {
                     guild.getAudioManager().openAudioConnection(vc);
@@ -93,13 +95,22 @@ public class Listener extends ListenerAdapter
                 catch(Exception ex) {} // ignored
             }, 0, 24, TimeUnit.HOURS);
         }
+
+		bot.getJDA().getGuildById("857416626575376434").updateCommands().addCommands(
+
+		).queue();
     }
     
     @Override
-    public void onGuildMessageDelete(GuildMessageDeleteEvent event) 
+    public void onMessageDelete(MessageDeleteEvent event)
     {
         bot.getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
     }
+	@Override
+	public void onSlashCommandInteraction(SlashCommandInteractionEvent event)
+	{
+
+	}
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) 
@@ -148,8 +159,8 @@ public class Listener extends ListenerAdapter
     		return;
     	}
     }
-    @Override
-    public void onGuildVoiceJoin(GuildVoiceJoinEvent event)
+
+    public void onGuildVoiceJoin(GuildVoiceUpdateEvent event)
     {
     	//check if it's a bot
     	if (event.getMember().getUser().isBot()) 
@@ -192,8 +203,8 @@ public class Listener extends ListenerAdapter
     	
     }
     
-    @Override
-    public void onGuildVoiceLeave(GuildVoiceLeaveEvent event)
+
+    public void onGuildVoiceLeave(GuildVoiceUpdateEvent event)
     {
     	//check if it's a bot
     	if (event.getMember().getUser().isBot()) 
@@ -245,6 +256,12 @@ public class Listener extends ListenerAdapter
     @Override
     public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event)
     {
+		if (event.getOldValue() != null){
+			onGuildVoiceLeave(event);
+		}
+		if (event.getNewValue() != null){
+			onGuildVoiceJoin(event);
+		}
         bot.getAloneInVoiceHandler().onVoiceUpdate(event);
     }
 

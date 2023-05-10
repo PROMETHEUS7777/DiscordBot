@@ -30,6 +30,7 @@ import magick.ImageInfo;
 import magick.MagickException;
 import magick.MagickImage;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.utils.FileUpload;
 
 /**
  *
@@ -195,7 +196,7 @@ public class FastGifCommand extends MediaCommand
     	event.getChannel().editMessageById(pmsg.getId(),"Uploading result...").queue();
     	
     	//send finished image/gif
-    	event.getChannel().sendFile(blob, "fast_" + filename).queue();
+    	event.getChannel().sendFiles(FileUpload.fromData(blob, "fast_" + filename)).queue();
     	
     	//finalize processing message
     	event.getChannel().editMessageById(pmsg.getId(),"fast ass gif").queue();
