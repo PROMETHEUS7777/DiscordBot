@@ -106,11 +106,6 @@ public class Listener extends ListenerAdapter
     {
         bot.getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
     }
-	@Override
-	public void onSlashCommandInteraction(SlashCommandInteractionEvent event)
-	{
-
-	}
     
     @Override
     public void onMessageReceived(MessageReceivedEvent event) 
