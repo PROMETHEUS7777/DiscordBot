@@ -16,9 +16,15 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -34,10 +40,30 @@ public class SkiptoCmd extends DJCommand
         this.arguments = "<position>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.INTEGER, "position", "position in queue to skip to").setRequired(true));
+
+        this.options = options;
     }
 
     @Override
-    public void doCommand(CommandEvent event) 
+    public void doDjCommand(SlashCommandEvent event){
+        int index = event.getOption("position").getAsInt();
+
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        if(index<1 || index>handler.getQueue().size())
+        {
+            event.reply(event.getClient().getError()+" Position must be a valid integer between 1 and "+handler.getQueue().size()+"!").queue();
+            return;
+        }
+        handler.getQueue().skip(index-1);
+        event.reply(event.getClient().getSuccess()+" Skipped to **"+handler.getQueue().get(0).getTrack().getInfo().title+"**").queue();
+        handler.getPlayer().stopTrack();
+    }
+
+    @Override
+    public void doDjCommand(CommandEvent event)
     {
         int index = 0;
         try

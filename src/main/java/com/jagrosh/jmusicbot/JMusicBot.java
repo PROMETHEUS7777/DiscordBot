@@ -17,7 +17,6 @@ package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
-import com.jagrosh.jdautilities.examples.command.*;
 import com.jagrosh.jmusicbot.commands.Dice.RollCommand;
 import com.jagrosh.jmusicbot.commands.Media.*;
 import com.jagrosh.jmusicbot.commands.admin.*;
@@ -39,12 +38,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.*;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
@@ -97,8 +93,8 @@ public class JMusicBot
         Bot bot = new Bot(waiter, config, settings);
         
         AboutCommand aboutCommand = new AboutCommand(Color.BLUE.brighter(),
-                                "a music bot that is [easy to host yourself!](https://github.com/jagrosh/MusicBot) heavily modified by Prometheus#1510",
-                                new String[]{"High-quality music playback", "Dice roller", "Easy to host yourself"},
+                                "a muti-purpose bot that may or may not be [easy to host yourself!](https://github.com/PROMETHEUS7777/DiscordBot)",
+                                new String[]{"High-quality music playback", "Dice roller", "Image/gif Manipulation"},
                                 RECOMMENDED_PERMS);
         aboutCommand.setIsAuthor(false);
         aboutCommand.setReplacementCharacter("\uD83C\uDFB6"); // 🎶
@@ -131,10 +127,8 @@ public class JMusicBot
                         
                         new RollCommand(bot),
                         
-                        new LyricsCmd(bot),
                         new NowplayingCmd(bot),
                         new PlayCmd(bot),
-                        new PlaylistsCmd(bot),
                         new QueueCmd(bot),
                         new RemoveCmd(bot),
                         new SearchCmd(bot),
@@ -142,7 +136,7 @@ public class JMusicBot
                         new ShuffleCmd(bot),
                         new SkipCmd(bot),
 
-                        new ForceRemoveCmd(bot),
+                        new PurgeQueueCmd(bot),
                         new ForceskipCmd(bot),
                         new ForceskipfadeCmd(bot),
                         new MoveTrackCmd(bot),
@@ -153,7 +147,7 @@ public class JMusicBot
                         new StopCmd(bot),
                         new VolumeCmd(bot),
                         
-                        new PrefixCmd(bot),
+                        new SetPrefixCmd(bot),
                         new SetdjCmd(bot),
                         new SkipratioCmd(bot),
                         new SettcCmd(bot),
@@ -170,6 +164,51 @@ public class JMusicBot
                         new SetstatusCmd(bot),
                         new ShutdownCmd(bot),
                         new RestartCmd(bot)
+                )
+                .addSlashCommands(aboutCommand,
+                        new PingCommand(),
+                        new SettingsCmd(bot),
+                        new ListTiersCmd(bot),
+
+                        new TestCommand(bot),
+                        new CaptionCommand(bot),
+                        new ExplodeCommand(bot),
+                        new ImplodeCommand(bot),
+                        new FastGifCommand(bot),
+                        new SlowGifCommand(bot),
+                        new OilCommand(bot),
+                        new SwirlCommand(bot),
+                        new WaveCommand(bot),
+
+                        new RollCommand(bot),
+
+                        new NowplayingCmd(bot),
+                        new PlayCmd(bot),
+                        new QueueCmd(bot),
+                        new RemoveCmd(bot),
+                        new SearchCmd(bot),
+                        new SCSearchCmd(bot),
+                        new ShuffleCmd(bot),
+                        new SkipCmd(bot),
+
+                        new PurgeQueueCmd(bot),
+                        new ForceskipCmd(bot),
+                        new ForceskipfadeCmd(bot),
+                        new MoveTrackCmd(bot),
+                        new PauseCmd(bot),
+                        new PlaynextCmd(bot),
+                        new RepeatCmd(bot),
+                        new SkiptoCmd(bot),
+                        new StopCmd(bot),
+                        new VolumeCmd(bot),
+
+                        new SetPrefixCmd(bot),
+                        new SetdjCmd(bot),
+                        new SkipratioCmd(bot),
+                        new SettcCmd(bot),
+                        new SetvcCmd(bot),
+                        new TrackActivityCmd(bot),
+                        new SetTierCmd(bot)
                 );
         if(config.useEval())
             cb.addCommand(new EvalCmd(bot));
@@ -237,8 +276,6 @@ public class JMusicBot
                     + "attempting to connect, please make sure you're connected to the internet");
             System.exit(1);
         }
-
-
 
 
         //weekly reset for activity

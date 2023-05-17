@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.RequestMetadata;
@@ -40,7 +41,31 @@ public class ForceskipfadeCmd extends DJCommand
     }
 
     @Override
-    public void doCommand(CommandEvent event) 
+    public void doDjCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        RequestMetadata rm = handler.getRequestMetadata();
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        event.reply(event.getClient().getSuccess()+" Faded and skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title
+                +"** "+(rm.getOwner() == 0L ? "(autoplay)" : "(requested by **" + rm.user.username + "**)")).queue();
+        int volume = handler.getPlayer().getVolume();
+        //loop to decrease volume until 0
+        for (int tvol = volume; tvol > 0; tvol--) {
+            handler.getPlayer().setVolume(tvol);
+            settings.setVolume(tvol);
+            try {
+                Thread.sleep(40);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+            }
+        }
+        handler.getPlayer().stopTrack();
+        handler.getPlayer().setVolume(volume);
+        settings.setVolume(volume);
+    }
+
+    @Override
+    public void doDjCommand(CommandEvent event)
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         RequestMetadata rm = handler.getRequestMetadata();

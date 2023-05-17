@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jdautilities.menu.OrderedMenu;
 import com.jagrosh.jmusicbot.Bot;
@@ -24,7 +25,10 @@ import com.jagrosh.jmusicbot.commands.DJCommand;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -32,22 +36,79 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Michaili K.
  */
-public class ForceRemoveCmd extends DJCommand
+public class PurgeQueueCmd extends DJCommand
 {
-    public ForceRemoveCmd(Bot bot)
+    public PurgeQueueCmd(Bot bot)
     {
         super(bot);
-        this.name = "forceremove";
+        this.name = "purgequeue";
         this.help = "removes all entries by a user from the queue";
         this.arguments = "<user>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.beListening = false;
         this.bePlaying = true;
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.USER, "user", "the user to remove all queue entries from").setRequired(true));
+        this.options = options;
     }
 
     @Override
-    public void doCommand(CommandEvent event)
+    public void doDjCommand(SlashCommandEvent event)
+    {
+
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        if (handler.getQueue().isEmpty())
+        {
+            event.reply("There is nothing in the queue!").queue();
+            return;
+        }
+
+
+        User target;
+        List<Member> found = FinderUtil.findMembers(event.getOption("user").getAsUser().getId(), event.getGuild());
+
+        if(found.isEmpty())
+        {
+            event.reply("Unable to find the user!").queue();
+            return;
+        }
+        else if(found.size()>1)
+        {
+            OrderedMenu.Builder builder = new OrderedMenu.Builder();
+            for(int i=0; i<found.size() && i<4; i++)
+            {
+                Member member = found.get(i);
+                builder.addChoice("**"+member.getUser().getName()+"**#"+member.getUser().getDiscriminator());
+            }
+
+            builder
+                    .setSelection((msg, i) -> removeAllEntries(found.get(i-1).getUser(), event))
+                    .setText("Found multiple users:")
+                    .setColor(event.getGuild().getSelfMember().getColor())
+                    .useNumbers()
+                    .setUsers(event.getUser())
+                    .useCancelButton(true)
+                    .setCancel((msg) -> {})
+                    .setEventWaiter(bot.getWaiter())
+                    .setTimeout(1, TimeUnit.MINUTES)
+
+                    .build().display(event.getChannel());
+
+            return;
+        }
+        else
+        {
+            target = found.get(0).getUser();
+        }
+
+        removeAllEntries(target, event);
+
+    }
+
+    @Override
+    public void doDjCommand(CommandEvent event)
     {
         if (event.getArgs().isEmpty())
         {
@@ -102,6 +163,19 @@ public class ForceRemoveCmd extends DJCommand
 
         removeAllEntries(target, event);
 
+    }
+
+    private void removeAllEntries(User target, SlashCommandEvent event)
+    {
+        int count = ((AudioHandler) event.getGuild().getAudioManager().getSendingHandler()).getQueue().removeAll(target.getIdLong());
+        if (count == 0)
+        {
+            event.reply("**"+target.getName()+"** doesn't have any songs in the queue!").queue();
+        }
+        else
+        {
+            event.reply("Successfully removed `"+count+"` entries from **"+target.getName()+"**#"+target.getDiscriminator()+".").queue();
+        }
     }
 
     private void removeAllEntries(User target, CommandEvent event)

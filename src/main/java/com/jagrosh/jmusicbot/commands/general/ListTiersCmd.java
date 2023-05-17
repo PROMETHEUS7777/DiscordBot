@@ -15,6 +15,8 @@
  */
 package com.jagrosh.jmusicbot.commands.general;
 
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import org.json.JSONArray;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -26,7 +28,7 @@ import net.dv8tion.jda.api.entities.Role;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
-public class ListTiersCmd extends Command 
+public class ListTiersCmd extends SlashCommand
 {
     
     public ListTiersCmd(Bot bot)
@@ -34,7 +36,7 @@ public class ListTiersCmd extends Command
         this.name = "listtiers";
         this.help = "shows activity tiers for current guild";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = false;
+        this.guildOnly = true;
     }
     
     @Override
@@ -56,5 +58,25 @@ public class ListTiersCmd extends Command
     	event.replySuccess(msg);
     	
     }
+
+	@Override
+	protected void execute(SlashCommandEvent event)
+	{
+		Settings s = event.getClient().getSettingsFor(event.getGuild());
+		JSONArray tierIds = s.getTiers();
+		String msg = "Tiers for " + event.getGuild().getName();
+
+		if(tierIds.isEmpty())
+		{
+			event.reply("No tier roles set for this server, use `" + event.getClient().getPrefix() + "settier` to set tier roles").setEphemeral(true).queue();
+			return;
+		}
+		for(int i = 0; i < tierIds.length() ; i++)
+		{
+			msg = msg + "\n Tier" + i + ":\n\tValue: " + tierIds.getJSONObject(i).getLong("value") +"\n\tRole: <@&" + tierIds.getJSONObject(i).getLong("id") + ">";
+		}
+		event.reply(msg).setEphemeral(true).queue();
+
+	}
     
 }

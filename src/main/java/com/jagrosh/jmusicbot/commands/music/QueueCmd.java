@@ -15,9 +15,11 @@
  */
 package com.jagrosh.jmusicbot.commands.music;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.menu.Paginator;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.JMusicBot;
@@ -30,6 +32,8 @@ import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.exceptions.PermissionException;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
@@ -50,6 +54,11 @@ public class QueueCmd extends MusicCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
         this.botPermissions = new Permission[]{Permission.MESSAGE_ADD_REACTION,Permission.MESSAGE_EMBED_LINKS};
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.INTEGER, "pagenum", "the page to display").setRequired(false));
+        this.options = options;
+
         builder = new Paginator.Builder()
                 .setColumns(1)
                 .setFinalAction(m -> {try{m.clearReactions().queue();}catch(PermissionException ignore){}})
@@ -60,6 +69,50 @@ public class QueueCmd extends MusicCommand
                 .wrapPageEnds(true)
                 .setEventWaiter(bot.getWaiter())
                 .setTimeout(1, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        int pagenum = 1;
+        if(event.getOption("pagenum") != null){
+            try
+            {
+                pagenum = Integer.parseInt(event.getOption("pagenum").getAsString());
+            }
+            catch(NumberFormatException ignore){}
+        }
+        AudioHandler ah = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        List<QueuedTrack> list = ah.getQueue().getList();
+        if(list.isEmpty())
+        {
+            MessageCreateData nowp = ah.getNowPlaying(event.getJDA());
+            MessageCreateData nonowp = ah.getNoMusicPlaying(event.getJDA());
+            MessageCreateData built = new MessageCreateBuilder()
+                    .setContent(event.getClient().getWarning() + " There is no music in the queue!")
+                    .setEmbeds((nowp==null ? nonowp : nowp).getEmbeds().get(0)).build();
+            event.reply(built).queue();
+            return;
+        }
+        String[] songs = new String[list.size()];
+        long total = 0;
+        for(int i=0; i<list.size(); i++)
+        {
+            total += list.get(i).getTrack().getDuration();
+            songs[i] = list.get(i).toString();
+        }
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        long fintotal = total;
+        builder.setText((i1,i2) -> getQueueTitle(ah, event.getClient().getSuccess(), songs.length, fintotal, settings.getRepeatMode()))
+                .setItems(songs)
+                .setUsers(event.getUser())
+                .setColor(event.getGuild().getSelfMember().getColor())
+        ;
+
+        event.reply("Loading...").queue(
+                hook -> hook.deleteOriginal().queue()
+        );
+        builder.build().paginate(event.getChannel(), pagenum);
     }
 
     @Override

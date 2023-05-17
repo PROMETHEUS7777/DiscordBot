@@ -15,15 +15,20 @@
  */
 package com.jagrosh.jmusicbot.commands.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  *
@@ -37,6 +42,34 @@ public class SettcCmd extends AdminCommand
         this.help = "sets the text channel for music commands";
         this.arguments = "<channel|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.CHANNEL, "channel", "the channel to allow music commands, leave empty to clear channel").setRequired(false));
+
+        this.options = options;
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event){
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        if(event.getOption("channel") == null)
+        {
+            s.setTextChannel(null);
+            event.reply(event.getClient().getSuccess()+" Music commands can now be used in any channel").queue();
+        }
+        else
+        {
+            List<TextChannel> list = FinderUtil.findTextChannels(event.getOption("channel").getAsChannel().getId(), event.getGuild());
+            if(list.isEmpty())
+                event.reply(event.getClient().getWarning()+" No Text Channels found matching \""+event.getOption("channel").getAsChannel()+"\"").queue();
+            else if (list.size()>1)
+                event.reply(event.getClient().getWarning()+FormatUtil.listOfTChannels(list.stream().map(tc -> (MessageChannelUnion)tc).toList(), event.getOption("channel").getAsChannel().getId())).queue();
+            else
+            {
+                s.setTextChannel(list.get(0));
+                event.reply(event.getClient().getSuccess()+" Music commands can now only be used in <#"+list.get(0).getId()+">").queue();
+            }
+        }
     }
     
     @Override

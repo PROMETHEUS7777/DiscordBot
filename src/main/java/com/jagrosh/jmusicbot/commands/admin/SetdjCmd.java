@@ -15,14 +15,18 @@
  */
 package com.jagrosh.jmusicbot.commands.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  *
@@ -36,6 +40,27 @@ public class SetdjCmd extends AdminCommand
         this.help = "sets the DJ role for certain music commands";
         this.arguments = "<rolename|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.ROLE, "role", "role to set the server dj role to, leave empty to clear the dj role").setRequired(false));
+
+        this.options = options;
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event){
+
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        if(event.getOption("role") == null)
+        {
+            s.setDJRole(null);
+            event.reply(event.getClient().getSuccess()+" DJ role cleared; Only Admins can use the DJ commands.").queue();
+        }
+        else
+        {
+            s.setDJRole(event.getOption("role").getAsRole());
+            event.reply(event.getClient().getSuccess()+" DJ commands can now be used by users with the **"+event.getOption("role").getAsRole().getName()+"** role.").queue();
+        }
     }
     
     @Override

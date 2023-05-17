@@ -16,22 +16,48 @@
 package com.jagrosh.jmusicbot.commands.admin;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public class PrefixCmd extends AdminCommand
+public class SetPrefixCmd extends AdminCommand
 {
-    public PrefixCmd(Bot bot)
+    public SetPrefixCmd(Bot bot)
     {
-        this.name = "prefix";
+        this.name = "setprefix";
         this.help = "sets a server-specific prefix";
         this.arguments = "<prefix|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.STRING, "prefix", "what to set the server-specific prefix to, use NONE to clear server prefix").setRequired(true));
+
+        this.options = options;
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event){
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        if(event.getOption("prefix").getAsString().equalsIgnoreCase("none"))
+        {
+            s.setPrefix(null);
+            event.reply("Prefix cleared.").queue();
+        }
+        else
+        {
+            s.setPrefix(event.getOption("prefix").getAsString());
+            event.reply("Server prefix set to `" + event.getOption("prefix").getAsString() + "` on *" + event.getGuild().getName() + "*").queue();
+        }
     }
     
     @Override

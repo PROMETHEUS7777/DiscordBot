@@ -65,9 +65,16 @@ public class UnfairQueue <T extends Queueable> implements Queue<T> {
      }
 
      public int removeAll(long identifier) {
-         int listSize = list.size();
-         list.clear();
-         return listSize;
+         int count = 0;
+         for(int i=list.size()-1; i>=0; i--)
+         {
+             if(list.get(i).getIdentifier()==identifier)
+             {
+                 list.remove(i);
+                 count++;
+             }
+         }
+         return count;
      }
 
      public void clear() {

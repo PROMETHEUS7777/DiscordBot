@@ -8,8 +8,9 @@
 
     <repositories>
         <repository>
-            <id>chew-m2-snapshots</id>
-            <url>https://m2.chew.pro/snapshots/</url>
+            <id>chew</id>
+            <name>m2-chew-snapshots</name>
+            <url>https://m2.chew.pro/snapshots</url>
         </repository>
         <repository>
             <id>dv8tion</id>

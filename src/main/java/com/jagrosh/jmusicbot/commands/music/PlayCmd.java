@@ -15,6 +15,8 @@
  */
 package com.jagrosh.jmusicbot.commands.music;
 
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity;
@@ -30,10 +32,16 @@ import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
 import com.jagrosh.jmusicbot.playlist.PlaylistLoader.Playlist;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.exceptions.PermissionException;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  *
@@ -51,12 +59,53 @@ public class PlayCmd extends MusicCommand
         super(bot);
         this.loadingEmoji = bot.getConfig().getLoading();
         this.name = "play";
-        this.arguments = "<title|URL|subcommand>";
+        this.arguments = "<title|URL>";
         this.help = "plays the provided song";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.beListening = true;
         this.bePlaying = false;
-        this.children = new Command[]{new PlaylistCmd(bot)};
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.STRING, "song", "title or url of song to play").setRequired(false));
+        options.add(new OptionData(OptionType.ATTACHMENT, "local", "audio file to play").setRequired(false));
+
+        this.options = options;
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        if(event.getOption("song") == null && event.getOption("local") == null)
+        {
+            AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+            if(handler.getPlayer().getPlayingTrack()!=null && handler.getPlayer().isPaused())
+            {
+                if(DJCommand.checkDJPermission(event))
+                {
+                    handler.getPlayer().setPaused(false);
+                    event.reply("Resumed **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**.").queue();
+                }
+                else
+                    event.reply("Only DJs can unpause the player!").queue();
+                return;
+            }
+            StringBuilder builder = new StringBuilder(event.getClient().getWarning()+" Play Commands:\n");
+            builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" <song title>` - plays the first result from Youtube");
+            builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" <URL>` - plays the provided song, playlist, or stream");
+            builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" [Attachment]` - plays the attached video file");
+            event.reply(builder.toString()).queue();
+            return;
+        }
+        String args = event.getOption("song").getAsString().startsWith("<") && event.getOption("song").getAsString().endsWith(">")
+                ? event.getOption("song").getAsString().substring(1,event.getOption("song").getAsString().length()-1)
+                : event.getOption("song").getAsString().isEmpty() ? event.getOption("local").getAsAttachment().getUrl() : event.getOption("song").getAsString();
+        //event.reply(loadingEmoji+" Loading... `["+args+"]`", m -> bot.getPlayerManager().loadItemOrdered(event.getGuild(), args, new ResultHandler(m,event,false)));
+
+        event.reply(loadingEmoji+" Loading... `["+args+"]`").queue(
+                hook -> {
+                    bot.getPlayerManager().loadItemOrdered(event.getGuild(), args, new SResultHandler(hook, event, false));
+                }
+        );
     }
 
     @Override
@@ -79,8 +128,7 @@ public class PlayCmd extends MusicCommand
             StringBuilder builder = new StringBuilder(event.getClient().getWarning()+" Play Commands:\n");
             builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" <song title>` - plays the first result from Youtube");
             builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" <URL>` - plays the provided song, playlist, or stream");
-            for(Command cmd: children)
-                builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" ").append(cmd.getName()).append(" ").append(cmd.getArguments()).append("` - ").append(cmd.getHelp());
+            builder.append("\n`").append(event.getClient().getPrefix()).append(name).append(" [Attachment]` - plays the attached video file");
             event.reply(builder.toString());
             return;
         }
@@ -207,50 +255,128 @@ public class PlayCmd extends MusicCommand
                 m.editMessage(event.getClient().getError()+" Error loading track.").queue();
         }
     }
-    
-    public class PlaylistCmd extends MusicCommand
+
+    private class SResultHandler implements AudioLoadResultHandler
     {
-        public PlaylistCmd(Bot bot)
+        private final InteractionHook hook;
+        private final SlashCommandEvent event;
+        private final boolean ytsearch;
+
+        private SResultHandler(InteractionHook hook, SlashCommandEvent event, boolean ytsearch)
         {
-            super(bot);
-            this.name = "playlist";
-            this.aliases = new String[]{"pl"};
-            this.arguments = "<name>";
-            this.help = "plays the provided playlist";
-            this.beListening = true;
-            this.bePlaying = false;
+            this.hook = hook;
+            this.event = event;
+            this.ytsearch = ytsearch;
+        }
+
+        private void loadSingle(AudioTrack track, AudioPlaylist playlist)
+        {
+            if(bot.getConfig().isTooLong(track))
+            {
+                hook.editOriginal(FormatUtil.filter(event.getClient().getWarning()+" This track (**"+track.getInfo().title+"**) is longer than the allowed maximum: `"
+                        +FormatUtil.formatTime(track.getDuration())+"` > `"+FormatUtil.formatTime(bot.getConfig().getMaxSeconds()*1000)+"`")).queue();
+                return;
+            }
+            AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+            int pos = handler.addTrack(new QueuedTrack(track, event.getUser()))+1;
+            String addMsg = FormatUtil.filter(event.getClient().getSuccess()+" Added **"+track.getInfo().title
+                    +"** (`"+FormatUtil.formatTime(track.getDuration())+"`) "+(pos==0?"to begin playing":" to the queue at position "+pos));
+            if(playlist==null || !event.getGuild().getSelfMember().hasPermission(event.getTextChannel(), Permission.MESSAGE_ADD_REACTION))
+                hook.editOriginal(addMsg).queue();
+            else
+            {
+                hook.deleteOriginal().queue();
+                event.getChannel().sendMessage("Loading...").queue(
+                        m -> {
+                            new ButtonMenu.Builder()
+                                    .setText(addMsg+"\n"+event.getClient().getWarning()+" This track has a playlist of **"+playlist.getTracks().size()+"** tracks attached. Select "+LOAD+" to load playlist.")
+                                    .setChoices(LOAD, CANCEL)
+                                    .setEventWaiter(bot.getWaiter())
+                                    .setTimeout(30, TimeUnit.SECONDS)
+                                    .setAction(re ->
+                                    {
+                                        if(re.getName().equals(LOAD))
+                                            m.editMessage(addMsg+"\n"+event.getClient().getSuccess()+" Loaded **"+loadPlaylist(playlist, track)+"** additional tracks!").queue();
+                                        else
+                                            m.editMessage(addMsg).queue();
+                                    }).setFinalAction(m2 ->
+                                    {
+                                        try{ m2.clearReactions().queue(); }catch(PermissionException ignore) {}
+                                    }).build().display(m);
+                        }
+                );
+
+            }
+        }
+
+        private int loadPlaylist(AudioPlaylist playlist, AudioTrack exclude)
+        {
+            int[] count = {0};
+            playlist.getTracks().stream().forEach((track) -> {
+                if(!bot.getConfig().isTooLong(track) && !track.equals(exclude))
+                {
+                    AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+                    handler.addTrack(new QueuedTrack(track, event.getUser()));
+                    count[0]++;
+                }
+            });
+            return count[0];
         }
 
         @Override
-        public void doCommand(CommandEvent event) 
+        public void trackLoaded(AudioTrack track)
         {
-            if(event.getArgs().isEmpty())
+            loadSingle(track, null);
+        }
+
+        @Override
+        public void playlistLoaded(AudioPlaylist playlist)
+        {
+            if(playlist.getTracks().size()==1 || playlist.isSearchResult())
             {
-                event.reply(event.getClient().getError()+" Please include a playlist name.");
-                return;
+                AudioTrack single = playlist.getSelectedTrack()==null ? playlist.getTracks().get(0) : playlist.getSelectedTrack();
+                loadSingle(single, null);
             }
-            Playlist playlist = bot.getPlaylistLoader().getPlaylist(event.getArgs());
-            if(playlist==null)
+            else if (playlist.getSelectedTrack()!=null)
             {
-                event.replyError("I could not find `"+event.getArgs()+".txt` in the Playlists folder.");
-                return;
+                AudioTrack single = playlist.getSelectedTrack();
+                loadSingle(single, playlist);
             }
-            event.getChannel().sendMessage(loadingEmoji+" Loading playlist **"+event.getArgs()+"**... ("+playlist.getItems().size()+" items)").queue(m -> 
+            else
             {
-                AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
-                playlist.loadTracks(bot.getPlayerManager(), (at)->handler.addTrack(new QueuedTrack(at, event.getAuthor())), () -> {
-                    StringBuilder builder = new StringBuilder(playlist.getTracks().isEmpty() 
-                            ? event.getClient().getWarning()+" No tracks were loaded!" 
-                            : event.getClient().getSuccess()+" Loaded **"+playlist.getTracks().size()+"** tracks!");
-                    if(!playlist.getErrors().isEmpty())
-                        builder.append("\nThe following tracks failed to load:");
-                    playlist.getErrors().forEach(err -> builder.append("\n`[").append(err.getIndex()+1).append("]` **").append(err.getItem()).append("**: ").append(err.getReason()));
-                    String str = builder.toString();
-                    if(str.length()>2000)
-                        str = str.substring(0,1994)+" (...)";
-                    m.editMessage(FormatUtil.filter(str)).queue();
-                });
-            });
+                int count = loadPlaylist(playlist, null);
+                if(count==0)
+                {
+                    hook.editOriginal(FormatUtil.filter(event.getClient().getWarning()+" All entries in this playlist "+(playlist.getName()==null ? "" : "(**"+playlist.getName()
+                            +"**) ")+"were longer than the allowed maximum (`"+bot.getConfig().getMaxTime()+"`)")).queue();
+                }
+                else
+                {
+                    hook.editOriginal(FormatUtil.filter(event.getClient().getSuccess()+" Found "
+                            +(playlist.getName()==null?"a playlist":"playlist **"+playlist.getName()+"**")+" with `"
+                            + playlist.getTracks().size()+"` entries; added to the queue!"
+                            + (count<playlist.getTracks().size() ? "\n"+event.getClient().getWarning()+" Tracks longer than the allowed maximum (`"
+                            + bot.getConfig().getMaxTime()+"`) have been omitted." : ""))).queue();
+                }
+            }
+        }
+
+        @Override
+        public void noMatches()
+        {
+            if(ytsearch)
+                hook.editOriginal(FormatUtil.filter(event.getClient().getWarning()+" No results found for `"+event.getOption("song").getAsString()+"`.")).queue();
+            else
+                bot.getPlayerManager().loadItemOrdered(event.getGuild(), "ytsearch:"+event.getOption("song").getAsString(), new SResultHandler(hook,event,true));
+        }
+
+        @Override
+        public void loadFailed(FriendlyException throwable)
+        {
+            if(throwable.severity==Severity.COMMON)
+                hook.editOriginal(event.getClient().getError()+" Error loading: "+throwable.getMessage()).queue();
+            else
+                hook.editOriginal(event.getClient().getError()+" Error loading track.").queue();
         }
     }
 }

@@ -15,14 +15,17 @@
  */
 package com.jagrosh.jmusicbot.commands;
 
-import com.jagrosh.jdautilities.command.Command;
+
+import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.Permission;
 
 /**
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public abstract class AdminCommand extends Command
+public abstract class AdminCommand extends SlashCommand
 {
     public AdminCommand()
     {
@@ -35,5 +38,6 @@ public abstract class AdminCommand extends Command
             return event.getMember().hasPermission(Permission.MANAGE_SERVER);
         });
         this.guildOnly = true;
+        this.userPermissions = new Permission[]{Permission.MANAGE_SERVER};
     }
 }

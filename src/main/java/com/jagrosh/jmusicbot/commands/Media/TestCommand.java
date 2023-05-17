@@ -16,8 +16,10 @@
 package com.jagrosh.jmusicbot.commands.Media;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.MediaCommand;
+import net.dv8tion.jda.api.Permission;
 
 /**
  *
@@ -35,13 +37,16 @@ public class TestCommand extends MediaCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
     }
-    
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        event.reply("https://i.imgflip.com/6a8fc2.gif\ntest \n from slash command").queue();
+    }
+
     @Override
     protected void execute(CommandEvent event)
     {
-    	
-        event.reply("https://i.imgflip.com/6a8fc2.gif");
-        event.reply("test \n test");
-        
+        event.reply("https://i.imgflip.com/6a8fc2.gif\ntest \n from normal prefix");
     }
 }

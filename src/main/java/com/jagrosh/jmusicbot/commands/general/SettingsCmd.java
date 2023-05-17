@@ -17,6 +17,8 @@ package com.jagrosh.jmusicbot.commands.general;
 
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.jagrosh.jmusicbot.settings.Settings;
@@ -31,7 +33,7 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
-public class SettingsCmd extends Command 
+public class SettingsCmd extends SlashCommand
 {
     private final static String EMOJI = "\uD83C\uDFA7"; // 🎧
     
@@ -44,7 +46,36 @@ public class SettingsCmd extends Command
     }
     
     @Override
-    protected void execute(CommandEvent event) 
+    protected void execute(SlashCommandEvent event)
+    {
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        MessageCreateBuilder builder = new MessageCreateBuilder()
+                .addContent(EMOJI + " **")
+                .addContent(FormatUtil.filter(event.getJDA().getSelfUser().getName()))
+                .addContent("** settings:");
+        TextChannel tchan = s.getTextChannel(event.getGuild());
+        VoiceChannel vchan = s.getVoiceChannel(event.getGuild());
+        Role role = s.getRole(event.getGuild());
+        double skipRatio = s.getSkipRatio();
+        EmbedBuilder ebuilder = new EmbedBuilder()
+                .setColor(event.getGuild().getSelfMember().getColor())
+                .setDescription("Text Channel: " + (tchan == null ? "Any" : "**#" + tchan.getName() + "**")
+                        + "\nVoice Channel: " + (vchan == null ? "Any" : vchan.getAsMention())
+                        + "\nDJ Role: " + (role == null ? "None" : "**" + role.getName() + "**")
+                        + "\nVote Skip Ratio: " + (int) (skipRatio*100) + '%'
+                        + "\nCustom Prefix: " + (s.getPrefix() == null ? "None" : "`" + s.getPrefix() + "`")
+                        + "\nRepeat Mode: " + (s.getRepeatMode() == RepeatMode.OFF
+                                                ? s.getRepeatMode().getUserFriendlyName()
+                                                : "**"+s.getRepeatMode().getUserFriendlyName()+"**")
+                        + "\nDefault Playlist: " + (s.getDefaultPlaylist() == null ? "None" : "**" + s.getDefaultPlaylist() + "**")
+                        )
+                .setFooter(event.getJDA().getGuilds().stream().filter(g -> g.getSelfMember().getVoiceState().inAudioChannel()).count()
+                        + " audio connections", null);
+        event.reply(builder.setEmbeds(ebuilder.build()).build()).queue();
+    }
+
+    @Override
+    protected void execute(CommandEvent event)
     {
         Settings s = event.getClient().getSettingsFor(event.getGuild());
         MessageCreateBuilder builder = new MessageCreateBuilder()
@@ -54,19 +85,20 @@ public class SettingsCmd extends Command
         TextChannel tchan = s.getTextChannel(event.getGuild());
         VoiceChannel vchan = s.getVoiceChannel(event.getGuild());
         Role role = s.getRole(event.getGuild());
+        double skipRatio = s.getSkipRatio();
         EmbedBuilder ebuilder = new EmbedBuilder()
                 .setColor(event.getSelfMember().getColor())
                 .setDescription("Text Channel: " + (tchan == null ? "Any" : "**#" + tchan.getName() + "**")
                         + "\nVoice Channel: " + (vchan == null ? "Any" : vchan.getAsMention())
                         + "\nDJ Role: " + (role == null ? "None" : "**" + role.getName() + "**")
+                        + "\nVote Skip Ratio: " + (int) (skipRatio*100) + '%'
                         + "\nCustom Prefix: " + (s.getPrefix() == null ? "None" : "`" + s.getPrefix() + "`")
                         + "\nRepeat Mode: " + (s.getRepeatMode() == RepeatMode.OFF
-                                                ? s.getRepeatMode().getUserFriendlyName()
-                                                : "**"+s.getRepeatMode().getUserFriendlyName()+"**")
+                        ? s.getRepeatMode().getUserFriendlyName()
+                        : "**"+s.getRepeatMode().getUserFriendlyName()+"**")
                         + "\nDefault Playlist: " + (s.getDefaultPlaylist() == null ? "None" : "**" + s.getDefaultPlaylist() + "**")
-                        )
-                .setFooter(event.getJDA().getGuilds().size() + " servers | "
-                        + event.getJDA().getGuilds().stream().filter(g -> g.getSelfMember().getVoiceState().inAudioChannel()).count()
+                )
+                .setFooter(event.getJDA().getGuilds().stream().filter(g -> g.getSelfMember().getVoiceState().inAudioChannel()).count()
                         + " audio connections", null);
         event.getChannel().sendMessage(builder.setEmbeds(ebuilder.build()).build()).queue();
     }

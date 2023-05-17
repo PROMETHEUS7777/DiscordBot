@@ -2,11 +2,17 @@ package com.jagrosh.jmusicbot.commands.dj;
 
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.QueuedTrack;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.queue.Queue;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Command that provides users the ability to move a track in the playlist.
@@ -22,10 +28,50 @@ public class MoveTrackCmd extends DJCommand
         this.arguments = "<from> <to>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.INTEGER, "from", "the current position in queue").setRequired(true));
+        options.add(new OptionData(OptionType.INTEGER, "to", "the new position in queue").setRequired(true));
+        this.options = options;
     }
 
     @Override
-    public void doCommand(CommandEvent event)
+    public void doDjCommand(SlashCommandEvent event)
+    {
+        int from = event.getOption("from").getAsInt();
+        int to = event.getOption("to").getAsInt();
+
+        if (from == to)
+        {
+            event.reply("Can't move a track to the same position.").queue();
+            return;
+        }
+
+        // Validate that from and to are available
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        Queue<QueuedTrack> queue = handler.getQueue();
+        if (isUnavailablePosition(queue, from))
+        {
+            String reply = String.format("`%d` is not a valid position in the queue!", from);
+            event.reply(reply).queue();
+            return;
+        }
+        if (isUnavailablePosition(queue, to))
+        {
+            String reply = String.format("`%d` is not a valid position in the queue!", to);
+            event.reply(reply).queue();
+            return;
+        }
+
+        // Move the track
+        QueuedTrack track = queue.moveItem(from - 1, to - 1);
+        String trackTitle = track.getTrack().getInfo().title;
+        String reply = String.format("Moved **%s** from position `%d` to `%d`.", trackTitle, from, to);
+        event.reply(reply).queue();
+    }
+
+    @Override
+    public void doDjCommand(CommandEvent event)
     {
         int from;
         int to;

@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
@@ -38,6 +39,23 @@ public class NowplayingCmd extends MusicCommand
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
     }
 
+    //i can't figure out why it tracks the now playing messages, so it's going to stop doing that
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        MessageCreateData m = handler.getNowPlaying(event.getJDA());
+        if(m==null)
+        {
+            event.reply(handler.getNoMusicPlaying(event.getJDA())).queue();
+            //bot.getNowplayingHandler().clearLastNPMessage(event.getGuild());
+        }
+        else
+        {
+            event.reply(m).queue();
+        }
+    }
+
     @Override
     public void doCommand(CommandEvent event) 
     {
@@ -46,11 +64,12 @@ public class NowplayingCmd extends MusicCommand
         if(m==null)
         {
             event.reply(handler.getNoMusicPlaying(event.getJDA()));
-            bot.getNowplayingHandler().clearLastNPMessage(event.getGuild());
+            //bot.getNowplayingHandler().clearLastNPMessage(event.getGuild());
         }
         else
         {
-            event.reply(m, msg -> bot.getNowplayingHandler().setLastNPMessage(msg));
+            //event.reply(m, msg -> bot.getNowplayingHandler().setLastNPMessage(msg));
+            event.reply(m);
         }
     }
 }

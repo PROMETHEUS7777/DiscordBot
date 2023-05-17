@@ -15,8 +15,13 @@
  */
 package com.jagrosh.jmusicbot.commands.admin;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -37,9 +42,58 @@ public class SetTierCmd extends AdminCommand
     {
         this.name = "settier";
         this.help = "sets an activity tier role for this server";
-        this.arguments = "<tier number> <tier value> <rolename|NONE>";
+        this.arguments = "<tier number> <tier value> <role|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.INTEGER, "tier", "the activity tier to set").setRequired(true));
+        options.add(new OptionData(OptionType.INTEGER, "value", "the activity needed for this tier").setRequired(false));
+        options.add(new OptionData(OptionType.ROLE, "role", "the role to set as this tier, leave empty to clear role").setRequired(false));
+
+        this.options = options;
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        int tier = event.getOption("tier").getAsInt();
+        JSONObject tierData = new JSONObject();
+        int value;
+        Role role;
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        JSONArray tiers = s.getTiers();
+
+        if(tiers.length() < tier)
+        {
+            event.reply("Must fill all lower tiers starting at 0 before filling tier *" + tier + "*").queue();
+            return;
+        }
+        if (event.getOption("value") == null && event.getOption("role") != null){
+            event.reply("please include a value for the activity tier").queue();
+            return;
+        }
+        //check if clearing a role
+        if(event.getOption("role") == null)
+        {
+            tiers.remove(tier);
+            s.setTiers(tiers);
+            event.reply("Tier *" + tier + "* cleared, any higher roles have been lowered by 1").queue();
+            return;
+        }
+        value = event.getOption("value").getAsInt();
+        role = event.getOption("role").getAsRole();
+        if(tiers.length() < tier)
+        {
+            event.reply("Must fill all lower tiers starting at 0 before filling tier *" + tier + "*").queue();
+            return;
+        }
+        tierData.put("id", role.getIdLong());
+        tierData.put("value", value);
+        tiers.put(tier, tierData);
+        s.setTiers(tiers);
+        event.reply("Set tier *" + tier + "* role to <@&" + tiers.getJSONObject(tier).getLong("id") + ">"
+                + "\n and tier *" + tier + "* value to *" +tiers.getJSONObject(tier).getInt("value") + "*").queue();
     }
     
     @Override
@@ -126,10 +180,5 @@ public class SetTierCmd extends AdminCommand
          s.setTiers(tiers);
          event.replySuccess("Set tier *" + tier + "* role to <@&" + tiers.getJSONObject(tier).getLong("id") + ">"
          		+ "\n and tier *" + tier + "* value to *" +tiers.getJSONObject(tier).getInt("value") + "*");
-         
-         
-         
-         
-         
     }
 }

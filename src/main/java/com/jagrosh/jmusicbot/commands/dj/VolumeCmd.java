@@ -16,11 +16,17 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -35,10 +41,39 @@ public class VolumeCmd extends DJCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.help = "sets or shows volume";
         this.arguments = "[0-150]";
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.INTEGER, "value", "the value to set the volume to, 0-150").setRequired(false));
+
+        this.options = options;
     }
 
     @Override
-    public void doCommand(CommandEvent event)
+    public void doDjCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        int volume = handler.getPlayer().getVolume();
+        if(event.getOption("value") == null)
+        {
+            event.reply(FormatUtil.volumeIcon(volume)+" Current volume is `"+volume+"`").queue();
+        }
+        else
+        {
+            int nvolume = event.getOption("value").getAsInt();
+            if(nvolume<0 || nvolume>150)
+                event.reply(event.getClient().getError()+" Volume must be a valid integer between 0 and 150!").queue();
+            else
+            {
+                handler.getPlayer().setVolume(nvolume);
+                settings.setVolume(nvolume);
+                event.reply(FormatUtil.volumeIcon(nvolume)+" Volume changed from `"+volume+"` to `"+nvolume+"`").queue();
+            }
+        }
+    }
+
+    @Override
+    public void doDjCommand(CommandEvent event)
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         Settings settings = event.getClient().getSettingsFor(event.getGuild());

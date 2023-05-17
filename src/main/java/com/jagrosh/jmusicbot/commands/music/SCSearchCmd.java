@@ -16,6 +16,11 @@
 package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jmusicbot.Bot;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -30,5 +35,9 @@ public class SCSearchCmd extends SearchCmd
         this.name = "scsearch";
         this.help = "searches Soundcloud for a provided query";
         this.aliases = bot.getConfig().getAliases(this.name);
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.STRING, "query", "what to search soundcloud for").setRequired(true));
+        this.options = options;
     }
 }

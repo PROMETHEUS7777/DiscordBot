@@ -15,8 +15,10 @@
  */
 package com.jagrosh.jmusicbot.commands.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
@@ -24,6 +26,8 @@ import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  *
@@ -37,6 +41,35 @@ public class SetvcCmd extends AdminCommand
         this.help = "sets the voice channel for playing music";
         this.arguments = "<channel|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+
+        List<OptionData> options = new ArrayList<>();
+        options.add(new OptionData(OptionType.CHANNEL, "channel", "the channel to allow music, leave empty to clear channel").setRequired(false));
+
+        this.options = options;
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        if(event.getOption("channel") == null)
+        {
+            s.setVoiceChannel(null);
+            event.reply(event.getClient().getSuccess()+" Music can now be played in any channel").queue();
+        }
+        else
+        {
+            List<VoiceChannel> list = FinderUtil.findVoiceChannels(event.getOption("channel").getAsChannel().getId(), event.getGuild());
+            if(list.isEmpty())
+                event.reply(event.getClient().getWarning()+" No Voice Channels found matching \""+event.getOption("channel").getAsChannel()+"\"").queue();
+            else if (list.size()>1)
+                event.reply(event.getClient().getWarning()+FormatUtil.listOfVChannels(list.stream().map(vc -> (AudioChannelUnion)vc).toList(), event.getOption("channel").getAsChannel().getId())).queue();
+            else
+            {
+                s.setVoiceChannel(list.get(0));
+                event.reply(event.getClient().getSuccess()+" Music can now only be played in "+list.get(0).getAsMention()).queue();
+            }
+        }
     }
     
     @Override

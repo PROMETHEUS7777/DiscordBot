@@ -16,12 +16,13 @@
 package com.jagrosh.jmusicbot.commands;
 
 import com.jagrosh.jdautilities.command.Command;
+import com.jagrosh.jdautilities.command.SlashCommand;
 
 /**
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public abstract class MediaCommand extends Command
+public abstract class MediaCommand extends SlashCommand
 {
     public MediaCommand()
     {

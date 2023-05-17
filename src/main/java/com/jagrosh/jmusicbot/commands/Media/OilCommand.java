@@ -20,8 +20,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.MediaCommand;
 
@@ -29,6 +33,8 @@ import magick.ImageInfo;
 import magick.MagickException;
 import magick.MagickImage;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.FileUpload;
 
 /**
@@ -46,9 +52,252 @@ public class OilCommand extends MediaCommand
         this.help = "apply an oil paint effect to an image or gif";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.arguments = "<image/gif>";
-        this.guildOnly = false;
+
+		this.children = new SlashCommand[]{new OilCommand.fromURL(), new OilCommand.fromFile()};
     }
-    
+
+	@Override
+	protected void execute(SlashCommandEvent event){}
+
+	private static class fromURL extends SlashCommand {
+		public fromURL() {
+			this.name = "url";
+			this.help = "oil paint an image/gif from a url";
+
+			List<OptionData> options = new ArrayList<>();
+			options.add(new OptionData(OptionType.STRING, "url", "the url of the image/gif to oil paint").setRequired(true));
+
+			this.options = options;
+
+		}
+		@Override
+		public void execute(SlashCommandEvent event){
+
+			event.deferReply().queue(
+					hook -> {
+						byte[] blob;
+						URL url;
+						String filename;
+
+						//get url and filename of attachment/embed
+						try {
+							url = new URL(event.getOption("url").getAsString());
+							filename = url.toString().substring(url.toString().lastIndexOf('/'));
+
+						} catch (MalformedURLException e) {
+							hook.editOriginal("Invalid URL").queue();
+							e.printStackTrace();
+							return;
+						}
+
+
+						//download blob from url
+						try(InputStream iStream = url.openStream()){
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+							int nRead;
+							byte[] data = new byte[16384];
+
+							while ((nRead = iStream.read(data, 0, data.length)) != -1) {
+								baos.write(data, 0, nRead);
+							}
+							blob = baos.toByteArray();
+
+						} catch (IOException e) {
+							hook.editOriginal("Unable to download image/gif, please try again").queue();
+							return;
+						}
+
+						//make image
+						MagickImage image;
+						ImageInfo info;
+						try {
+							image = new MagickImage(info = new ImageInfo(),blob);
+
+						} catch (MagickException e) {
+							hook.editOriginal("That's either not an image/gif or a bad link.\nIf it was from tenor, or a similar site, go and get the link to the actual gif.").queue();
+							return;
+						}
+
+						hook.editOriginal("Processing...").queue();
+
+						//convert image to array
+						MagickImage[] iarray= null;
+						try {
+							iarray = image.breakFrames();
+						} catch (MagickException e2) {
+							hook.editOriginal("Failed to paint").queue();
+							e2.printStackTrace();
+							return;
+						}
+
+
+
+						//oil paint the image
+						try {
+							for (int i = 0; i < iarray.length; i++) {
+								iarray[i] = iarray[i].oilPaintImage(3);
+							}
+						} catch (MagickException e) {
+							hook.editOriginal("Failed to paint").queue();
+							e.printStackTrace();
+							return;
+						}
+
+						//return to image
+						try {
+							image = new MagickImage(iarray);
+						} catch (MagickException e1) {
+							e1.printStackTrace();
+						}
+
+						//if filename has no format, put a format on it
+						if(filename.indexOf('.') == -1)
+						{
+							try {
+								filename += '.' + image.getImageFormat();
+							} catch (MagickException e) {
+								hook.editOriginal("Failed to paint").queue();
+								e.printStackTrace();
+								return;
+							}
+						}
+
+						//return image to blob
+						blob = image.imagesToBlob(info);
+
+						//update processing message
+						hook.editOriginal("Uploading result...").queue();
+
+						//send finished image/gif
+						hook.editOriginalAttachments(FileUpload.fromData(blob, "oilpaint_" + filename)).queue();
+
+						//finalize processing message
+						hook.editOriginal("the best artist").queue();
+					}
+			);
+		}
+	}
+
+	private static class fromFile extends SlashCommand {
+		public fromFile() {
+			this.name = "file";
+			this.help = "oil paint an image/gif from a file";
+
+			List<OptionData> options = new ArrayList<>();
+			options.add(new OptionData(OptionType.ATTACHMENT, "file", "the image/gif to oil paint").setRequired(true));
+
+			this.options = options;
+
+		}
+		@Override
+		public void execute(SlashCommandEvent event){
+
+			event.deferReply().queue(
+					hook -> {
+						byte[] blob;
+						URL url;
+						String filename;
+						String caption;
+
+						//get url and filename of attachment/embed
+						try {
+							url = new URL(event.getOption("file").getAsAttachment().getUrl());
+							filename = url.toString().substring(url.toString().lastIndexOf('/'));
+
+						} catch (MalformedURLException e) {
+							hook.editOriginal("Something fucked up").queue();
+							e.printStackTrace();
+							return;
+						}
+
+						//download blob from url
+						try(InputStream iStream = url.openStream()){
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+							int nRead;
+							byte[] data = new byte[16384];
+
+							while ((nRead = iStream.read(data, 0, data.length)) != -1) {
+								baos.write(data, 0, nRead);
+							}
+							blob = baos.toByteArray();
+
+						} catch (IOException e) {
+							hook.editOriginal("Unable to download image/gif, please try again").queue();
+							return;
+						}
+
+						//make image
+						MagickImage image;
+						ImageInfo info;
+						try {
+							image = new MagickImage(info = new ImageInfo(),blob);
+
+						} catch (MagickException e) {
+							hook.editOriginal("That's either not an image/gif or a bad link.\nIf it was from tenor, or a similar site, go and get the link to the actual gif.").queue();
+							return;
+						}
+
+						hook.editOriginal("Processing...").queue();
+
+						//convert image to array
+						MagickImage[] iarray= null;
+						try {
+							iarray = image.breakFrames();
+						} catch (MagickException e2) {
+							hook.editOriginal("Failed to paint").queue();
+							e2.printStackTrace();
+							return;
+						}
+
+
+
+						//oil paint the image
+						try {
+							for (int i = 0; i < iarray.length; i++) {
+								iarray[i] = iarray[i].oilPaintImage(3);
+							}
+						} catch (MagickException e) {
+							hook.editOriginal("Failed to paint").queue();
+							e.printStackTrace();
+							return;
+						}
+
+						//return to image
+						try {
+							image = new MagickImage(iarray);
+						} catch (MagickException e1) {
+							e1.printStackTrace();
+						}
+
+						//if filename has no format, put a format on it
+						if(filename.indexOf('.') == -1)
+						{
+							try {
+								filename += '.' + image.getImageFormat();
+							} catch (MagickException e) {
+								hook.editOriginal("Failed to paint").queue();
+								e.printStackTrace();
+								return;
+							}
+						}
+
+						//return image to blob
+						blob = image.imagesToBlob(info);
+
+						//update processing message
+						hook.editOriginal("Uploading result...").queue();
+
+						//send finished image/gif
+						hook.editOriginalAttachments(FileUpload.fromData(blob, "oilpaint_" + filename)).queue();
+
+						//finalize processing message
+						hook.editOriginal("the best artist").queue();
+					}
+			);
+		}
+	}
+
+	//normal prefix
     @Override
     protected void execute(CommandEvent event)
     {
