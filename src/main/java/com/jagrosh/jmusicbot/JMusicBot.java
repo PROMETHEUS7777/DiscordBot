@@ -61,7 +61,7 @@ public class JMusicBot
     public final static Permission[] RECOMMENDED_PERMS = {Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.MESSAGE_HISTORY, Permission.MESSAGE_ADD_REACTION,
                                 Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_MANAGE, Permission.MESSAGE_EXT_EMOJI,
                                 Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_SPEAK, Permission.NICKNAME_CHANGE};
-    public final static GatewayIntent[] INTENTS = {GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_EMOJIS_AND_STICKERS, GatewayIntent.SCHEDULED_EVENTS,
+    public final static GatewayIntent[] INTENTS = {GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_EMOJIS_AND_STICKERS, GatewayIntent.SCHEDULED_EVENTS,
             GatewayIntent.MESSAGE_CONTENT};
     /**
      * @param args the command line arguments
@@ -163,7 +163,8 @@ public class JMusicBot
                         new SetnameCmd(bot),
                         new SetstatusCmd(bot),
                         new ShutdownCmd(bot),
-                        new RestartCmd(bot)
+                        new RestartCmd(bot),
+                        new ForceWeeklyResetCmd(bot)
                 )
                 .addSlashCommands(aboutCommand,
                         new PingCommand(),
@@ -279,19 +280,12 @@ public class JMusicBot
 
 
         //weekly reset for activity
-        try (ScheduledExecutorService reset = Executors.newScheduledThreadPool(1)) {
+        ScheduledExecutorService reset = Executors.newSingleThreadScheduledExecutor();
             long epoch = Instant.now().getEpochSecond();
             reset.scheduleAtFixedRate(() -> {
-                        HashMap<Long, Settings> sMap = settings.getAllSettings();
-                        for (Settings s : sMap.values()) {
-                            s.oldActivity = s.activity;
-                            s.activity = new JSONObject();
-                        }
-                        settings.setAllSettings(sMap);
-                        UpdateActivityRoles uRoles = new UpdateActivityRoles();
-                        uRoles.UpdateAllActRoles(bot);
+                        OtherUtil.weeklyReset(bot);
                     }
                     , (((epoch - 237600) / 604800 + 1) * 604800 + 237600) - epoch, 604800, TimeUnit.SECONDS);
-        }
+
     }
 }

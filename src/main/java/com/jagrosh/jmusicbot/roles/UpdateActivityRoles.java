@@ -59,8 +59,6 @@ public class UpdateActivityRoles {
 			
 		}
 
-	
-
 		//loop through each tier
 		for (int i = 0 ; i < tiers.length() ; i++)
 		{
@@ -88,43 +86,44 @@ public class UpdateActivityRoles {
 		for (long gid: sMap.keySet()) {
 			
 			if (settings.getSettings(gid).getTracking()) {
-			JSONArray tiers = settings.getSettings(gid).getTiers();
-			List<Role> roles = bot.getJDA().getGuildById(gid).getRoles();
-			List<Long> roleIds = new ArrayList<Long>();
-			for (Role r : roles)
-			{
-				roleIds.add(r.getIdLong());
+				JSONArray tiers = settings.getSettings(gid).getTiers();
+				List<Role> roles = bot.getJDA().getRoles();
+				List<Long> roleIds = new ArrayList<Long>();
+				for (Role r : roles) {
+					roleIds.add(r.getIdLong());
+				}
+
+				for (Member member : bot.getJDA().getGuildById(gid).getMembers()) {
+					//dont care about bots
+					if (member.getUser().isBot()) {
+						continue;
+					}
+
+
+					//find what tier member should have
+					int sTier = 0;
+					if(settings.getSettings(gid).getOldActivity().has(member.getId())) {
+						int aNum = settings.getSettings(gid).getOldActivity().getJSONObject(member.getId()).getInt("msgs") + settings.getSettings(gid).getOldActivity().getJSONObject(member.getId()).getInt("voice") / settings.getSettings(gid).getVoiceRatio();
+						for (int i = 0; i < tiers.length(); i++) {
+							if (aNum >= tiers.getJSONObject(i).getInt("value")) {
+								sTier = i;
+							}
+						}
+					}
+					//loop through each tier
+					for (int i = 0; i < tiers.length(); i++) {
+						//if user has a role in this tier
+						if (roleIds.contains(tiers.getJSONObject(i).getLong("id"))) {
+							if (i == sTier) {
+								bot.getJDA().getGuildById(gid).addRoleToMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+							} else {
+								bot.getJDA().getGuildById(gid).removeRoleFromMember(member, bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
+							}
+						}
+					}
+
+				}
 			}
-    		for (String member : settings.getSettings(gid).getOldActivity().keySet()) {
-    			//find what tier member should have
-    			int sTier = 0;
-    			int aNum = settings.getSettings(gid).getOldActivity().getJSONObject(member).getInt("msgs") + settings.getSettings(gid).getOldActivity().getJSONObject(member).getInt("voice")/settings.getSettings(gid).getVoiceRatio();
-    			for(int i = 0; i < tiers.length() ; i++)
-    			{
-    				if (aNum >= tiers.getJSONObject(i).getInt("value"))
-    				{
-    					sTier = i;
-    				}
-    			}
-    			//loop through each tier
-    			for (int i = 0 ; i < tiers.length() ; i++)
-    			{
-    				//if user has a role in this tier
-    				if (roleIds.contains(tiers.getJSONObject(i).getLong("id")))
-    				{
-    					if(i == sTier)
-    					{
-    						bot.getJDA().getGuildById(gid).addRoleToMember(UserSnowflake.fromId(member), bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
-    					}
-    					else
-    					{
-    						bot.getJDA().getGuildById(gid).removeRoleFromMember(UserSnowflake.fromId(member), bot.getJDA().getGuildById(gid).getRoleById(tiers.getJSONObject(i).getLong("id"))).queue();
-    					}
-    				}
-    			}
-    			
-    		}
-    	}
 		}
 	}
 }

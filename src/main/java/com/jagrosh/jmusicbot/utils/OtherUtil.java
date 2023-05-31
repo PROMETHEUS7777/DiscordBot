@@ -15,6 +15,7 @@
  */
 package com.jagrosh.jmusicbot.utils;
 
+import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.JMusicBot;
 import com.jagrosh.jmusicbot.entities.Prompt;
 import java.io.*;
@@ -23,6 +24,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+
+import com.jagrosh.jmusicbot.roles.UpdateActivityRoles;
+import com.jagrosh.jmusicbot.settings.Settings;
+import com.jagrosh.jmusicbot.settings.SettingsManager;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import okhttp3.*;
@@ -181,5 +187,18 @@ public class OtherUtil
             return JMusicBot.class.getPackage().getImplementationVersion();
         else
             return "UNKNOWN";
+    }
+
+    public static void weeklyReset(Bot bot)
+    {
+
+        HashMap<Long, Settings> sMap = bot.getSettingsManager().getAllSettings();
+        for (Settings s : sMap.values()) {
+            s.oldActivity = s.activity;
+            s.activity = new JSONObject();
+        }
+        bot.getSettingsManager().setAllSettings(sMap);
+        UpdateActivityRoles uRoles = new UpdateActivityRoles();
+        uRoles.UpdateAllActRoles(bot);
     }
 }
