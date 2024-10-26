@@ -39,18 +39,21 @@ import net.dv8tion.jda.api.entities.Guild;
 public class PlayerManager extends DefaultAudioPlayerManager
 {
     private final Bot bot;
-    
+
     public PlayerManager(Bot bot)
     {
         this.bot = bot;
     }
-    
+
     public void init()
     {
         TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms()).forEach(t -> registerSourceManager(t));
 
         YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(true);
         yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
+        if(!bot.getConfig().getYtRefreshToken().equals("none")) {
+            yt.useOauth2(bot.getConfig().getYtRefreshToken(), false);
+        }
         registerSourceManager(yt);
 
         registerSourceManager(SoundCloudAudioSourceManager.createDefault());
@@ -66,17 +69,17 @@ public class PlayerManager extends DefaultAudioPlayerManager
 
         DuncteBotSources.registerAll(this, "en-US");
     }
-    
+
     public Bot getBot()
     {
         return bot;
     }
-    
+
     public boolean hasHandler(Guild guild)
     {
         return guild.getAudioManager().getSendingHandler()!=null;
     }
-    
+
     public AudioHandler setUpHandler(Guild guild)
     {
         AudioHandler handler;
